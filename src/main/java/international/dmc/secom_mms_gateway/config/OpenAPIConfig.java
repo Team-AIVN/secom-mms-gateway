@@ -1,4 +1,4 @@
-package international.dmc.secommmsgateway.config;
+package international.dmc.secom_mms_gateway.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;

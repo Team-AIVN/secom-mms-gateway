@@ -1,4 +1,4 @@
-package international.dmc.secommmsgateway;
+package international.dmc.secom_mms_gateway;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

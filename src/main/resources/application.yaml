@@ -1,0 +1,17 @@
+spring:
+  application.name: secom-mms-gateway
+
+international:
+  dmc:
+    secom_mms_gateway:
+      keystore:
+        path: keystore.p12
+        password: changeit
+        alias: cert
+      secom:
+        serviceUrl: https://example.com
+      mms:
+        mms-subject: s125
+        mms-edgerouter:
+          url: wss://eu-edgerouter.dmc.international:8888/
+        own-mrn: urn:mrn:mcp:service:mcc:core:secom-mms-gateway
