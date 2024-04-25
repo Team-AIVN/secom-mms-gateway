@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.maritimeconnectivity.mmtp.ApplicationMessage;
 import net.maritimeconnectivity.mmtp.ApplicationMessageHeader;
 import net.maritimeconnectivity.mmtp.Connect;
+import net.maritimeconnectivity.mmtp.Disconnect;
 import net.maritimeconnectivity.mmtp.MmtpMessage;
 import net.maritimeconnectivity.mmtp.MsgType;
 import net.maritimeconnectivity.mmtp.ProtocolMessage;
@@ -24,6 +25,7 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.handler.BinaryWebSocketHandler;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -86,6 +88,21 @@ public class MMSAgent {
         webSocketSession = webSocketClient.execute(new MMSWebsocketHandler(), null, uri).get();
     }
 
+    @PreDestroy
+    public void preDestroy() throws IOException {
+        MmtpMessage disconnect = MmtpMessage.newBuilder()
+                .setMsgType(MsgType.PROTOCOL_MESSAGE)
+                .setUuid(UUID.randomUUID().toString())
+                .setProtocolMessage(ProtocolMessage.newBuilder()
+                        .setProtocolMsgType(ProtocolMessageType.DISCONNECT_MESSAGE)
+                        .setDisconnectMessage(Disconnect.newBuilder()
+                                .build())
+                        .build())
+                .build();
+        sendMessage(disconnect);
+        lastSentMessage.set(disconnect);
+    }
+
     public void publishMessage(byte[] payload) throws UnrecoverableEntryException, CertificateException, SignatureException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchProviderException, InvalidKeyException {
         Calendar calendar = new GregorianCalendar();
         calendar.add(Calendar.DAY_OF_YEAR, 30);
@@ -95,6 +112,7 @@ public class MMSAgent {
 
         MmtpMessage mmtpMessage = MmtpMessage.newBuilder()
                 .setMsgType(MsgType.PROTOCOL_MESSAGE)
+                .setUuid(UUID.randomUUID().toString())
                 .setProtocolMessage(ProtocolMessage.newBuilder()
                         .setProtocolMsgType(ProtocolMessageType.SEND_MESSAGE)
                         .setSendMessage(Send.newBuilder()
