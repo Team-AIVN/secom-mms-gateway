@@ -55,18 +55,15 @@ public class MMSAgent {
 
     @Value("${international.dmc.secom_mms_gateway.mms.mms-edgerouter.url}")
     private String edgeRouterURL;
-
     @Value("${international.dmc.secom_mms_gateway.mms.own-mrn}")
     private String ownMrn;
-
     @Value("${international.dmc.secom_mms_gateway.mms.mms-subject}")
     private String subject;
 
     private final KeystoreUtil keystoreUtil;
+    private final AtomicReference<MmtpMessage> lastSentMessage = new AtomicReference<>();
 
     private WebSocketSession webSocketSession;
-
-    private final AtomicReference<MmtpMessage> lastSentMessage = new AtomicReference<>();
 
     @Autowired
     public MMSAgent(KeystoreUtil keystoreUtil) {

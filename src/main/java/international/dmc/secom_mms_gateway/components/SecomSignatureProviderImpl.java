@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
@@ -45,7 +44,7 @@ public class SecomSignatureProviderImpl implements SecomSignatureProvider {
     public byte[] generateSignature(DigitalSignatureCertificate signatureCertificate, DigitalSignatureAlgorithmEnum algorithm, byte[] payload) {
         try {
             return keystoreUtil.signData(payload);
-        } catch (NoSuchAlgorithmException | NoSuchProviderException | SignatureException | CertificateException |
+        } catch (NoSuchAlgorithmException | SignatureException | CertificateException |
                  KeyStoreException | IOException | UnrecoverableEntryException | InvalidKeyException e) {
             log.error(e.getMessage());
             return new byte[0];
