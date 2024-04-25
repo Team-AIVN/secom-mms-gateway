@@ -60,19 +60,22 @@ public class MMSAgent {
     @Value("${international.dmc.secom_mms_gateway.mms.mms-subject}")
     private String subject;
 
-    private KeystoreUtil keystoreUtil;
+    private final KeystoreUtil keystoreUtil;
 
     private WebSocketSession webSocketSession;
 
     private final AtomicReference<MmtpMessage> lastSentMessage = new AtomicReference<>();
 
     @Autowired
-    @PostConstruct
-    public void init(KeystoreUtil keystoreUtil) throws URISyntaxException, ExecutionException, InterruptedException, NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException, UnrecoverableKeyException, KeyManagementException {
+    public MMSAgent(KeystoreUtil keystoreUtil) {
         this.keystoreUtil = keystoreUtil;
+    }
+
+    @PostConstruct
+    public void init() throws URISyntaxException, ExecutionException, InterruptedException, NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException, UnrecoverableKeyException, KeyManagementException, NoSuchProviderException {
         StandardWebSocketClient webSocketClient = new StandardWebSocketClient();
 
-        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("ECDSA");
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         keyManagerFactory.init(keystoreUtil.getKeystore(), keystoreUtil.getKeystorePassword());
 
         SSLContext sslContext = SSLContext.getInstance("TLS");
@@ -137,7 +140,6 @@ public class MMSAgent {
 
         @Override
         public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-            super.afterConnectionEstablished(session);
             MmtpMessage mmtpMessage = MmtpMessage.newBuilder()
                     .setUuid(UUID.randomUUID().toString())
                     .setMsgType(MsgType.PROTOCOL_MESSAGE)
@@ -148,12 +150,13 @@ public class MMSAgent {
                                     .build())
                             .build())
                     .build();
-            sendMessage(mmtpMessage);
+            byte[] bytes = mmtpMessage.toByteArray();
+            session.sendMessage(new BinaryMessage(bytes));
+            lastSentMessage.set(mmtpMessage);
         }
 
         @Override
         protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
-            super.handleBinaryMessage(session, message);
             MmtpMessage mmtpMessage = MmtpMessage.parseFrom(message.getPayload());
             if (mmtpMessage == null) {
                 log.warn("Received a message that we could not parse");

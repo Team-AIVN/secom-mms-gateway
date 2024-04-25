@@ -23,8 +23,12 @@ import jakarta.validation.Valid;
 import jakarta.ws.rs.Path;
 import java.io.IOException;
 import java.net.URI;
+import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SignatureException;
+import java.security.UnrecoverableEntryException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.time.LocalDateTime;
@@ -37,9 +41,15 @@ public class UploadSecomController implements UploadSecomInterface {
 
     @Value("${international.dmc.secom_mms_gateway.secom.serviceUrl}")
     private String secomServiceUrl;
-    private SecomConfigProperties secomConfigProperties;
+    private final SecomConfigProperties secomConfigProperties;
     private SecomClient secomClient;
-    private MMSAgent mmsAgent;
+    private final MMSAgent mmsAgent;
+
+    @Autowired
+    public UploadSecomController(SecomConfigProperties secomConfigProperties, MMSAgent mmsAgent) {
+        this.secomConfigProperties = secomConfigProperties;
+        this.mmsAgent = mmsAgent;
+    }
 
     @PostConstruct
     public void init() throws UnrecoverableKeyException, CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException {
@@ -65,17 +75,13 @@ public class UploadSecomController implements UploadSecomInterface {
             secomClient.acknowledgment(acknowledgementObject);
         }
         byte[] data = envelope.getData();
+        try {
+            mmsAgent.publishMessage(data);
+        } catch (UnrecoverableEntryException | InvalidKeyException | CertificateException | NoSuchProviderException |
+                 IOException | KeyStoreException | NoSuchAlgorithmException | SignatureException e) {
+            log.error("Could not publish received dataset");
+        }
 
         return new UploadResponseObject();
-    }
-
-    @Autowired
-    public void setSecomConfigProperties(SecomConfigProperties secomConfigProperties) {
-        this.secomConfigProperties = secomConfigProperties;
-    }
-
-    @Autowired
-    public void setMmsAgent(MMSAgent mmsAgent) {
-        this.mmsAgent = mmsAgent;
     }
 }

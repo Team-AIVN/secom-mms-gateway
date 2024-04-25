@@ -1,12 +1,19 @@
 spring:
   application.name: secom-mms-gateway
 
+secom:
+  security:
+    ssl:
+      keystore: src/main/resources/keystore.p12
+      keystorePassword: changeit
+      insecureSslPolicy: true
+
 international:
   dmc:
     secom_mms_gateway:
       keystore:
-        path: keystore.p12
-        password: changeit
+        path: ${secom.security.ssl.keystore}
+        password: ${secom.security.ssl.keystorePassword}
         alias: cert
       secom:
         serviceUrl: https://example.com
