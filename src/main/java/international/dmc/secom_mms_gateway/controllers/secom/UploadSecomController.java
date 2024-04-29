@@ -7,10 +7,14 @@ import org.grad.secom.core.interfaces.UploadSecomInterface;
 import org.grad.secom.core.models.AcknowledgementObject;
 import org.grad.secom.core.models.EnvelopeAckObject;
 import org.grad.secom.core.models.EnvelopeUploadObject;
+import org.grad.secom.core.models.RemoveSubscriptionObject;
+import org.grad.secom.core.models.SubscriptionRequestObject;
 import org.grad.secom.core.models.UploadObject;
 import org.grad.secom.core.models.UploadResponseObject;
 import org.grad.secom.core.models.enums.AckRequestEnum;
 import org.grad.secom.core.models.enums.AckTypeEnum;
+import org.grad.secom.core.models.enums.ContainerTypeEnum;
+import org.grad.secom.core.models.enums.SECOM_DataProductType;
 import org.grad.secom.springboot3.components.SecomClient;
 import org.grad.secom.springboot3.components.SecomConfigProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +23,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Path;
 import java.io.IOException;
@@ -32,6 +37,7 @@ import java.security.UnrecoverableEntryException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Component
 @Path("/")
@@ -45,6 +51,8 @@ public class UploadSecomController implements UploadSecomInterface {
     private SecomClient secomClient;
     private final MMSAgent mmsAgent;
 
+    private UUID subscriptionIdentifier;
+
     @Autowired
     public UploadSecomController(SecomConfigProperties secomConfigProperties, MMSAgent mmsAgent) {
         this.secomConfigProperties = secomConfigProperties;
@@ -55,6 +63,25 @@ public class UploadSecomController implements UploadSecomInterface {
     public void init() throws UnrecoverableKeyException, CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException {
         if (secomServiceUrl != null && !secomServiceUrl.isBlank()) {
             secomClient = new SecomClient(URI.create(secomServiceUrl).toURL(), secomConfigProperties);
+            SubscriptionRequestObject subscriptionRequestObject = new SubscriptionRequestObject();
+            subscriptionRequestObject.setContainerType(ContainerTypeEnum.S100_DataSet);
+            subscriptionRequestObject.setDataProductType(SECOM_DataProductType.S125);
+            subscriptionRequestObject.setDataReference(UUID.fromString("c0a8fc1b-8da7-168e-818d-a7881c680000"));
+            var subscriptionResponse = secomClient.subscription(subscriptionRequestObject);
+            subscriptionResponse.ifPresent(sro -> {
+                log.info(sro.getMessage());
+                subscriptionIdentifier = sro.getSubscriptionIdentifier();
+            });
+        }
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        if (secomClient != null && subscriptionIdentifier != null) {
+            RemoveSubscriptionObject removeSubscriptionObject = new RemoveSubscriptionObject();
+            removeSubscriptionObject.setSubscriptionIdentifier(subscriptionIdentifier);
+            var removeSubscriptionResponseObject = secomClient.removeSubscription(removeSubscriptionObject);
+            removeSubscriptionResponseObject.ifPresent(rsro -> log.info(rsro.getMessage()));
         }
     }
 

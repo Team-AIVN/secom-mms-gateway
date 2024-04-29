@@ -24,7 +24,7 @@ public class KeystoreUtil {
     private String keystorePath;
     @Value("${international.dmc.secom_mms_gateway.keystore.password}")
     private String keystorePassword;
-    @Value("${international.dmc.secom_mms_gateway.secom.keypair.signing-algorithm:SHA3-384withECDSA}")
+    @Value("${international.dmc.secom_mms_gateway.mms.keypair.signing-algorithm:SHA384withECDSA}")
     private String signatureAlgorithm;
     @Value("${international.dmc.secom_mms_gateway.keystore.alias}")
     private String keyAlias;
