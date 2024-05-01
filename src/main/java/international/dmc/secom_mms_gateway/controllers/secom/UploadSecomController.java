@@ -37,6 +37,7 @@ import java.security.UnrecoverableEntryException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.UUID;
 
 @Component
@@ -64,7 +65,7 @@ public class UploadSecomController implements UploadSecomInterface {
         if (secomServiceUrl != null && !secomServiceUrl.isBlank()) {
             secomClient = new SecomClient(URI.create(secomServiceUrl).toURL(), secomConfigProperties);
             SubscriptionRequestObject subscriptionRequestObject = new SubscriptionRequestObject();
-            subscriptionRequestObject.setContainerType(ContainerTypeEnum.S100_DataSet);
+            subscriptionRequestObject.setContainerType(ContainerTypeEnum.S100_ExchangeSet);
             subscriptionRequestObject.setDataProductType(SECOM_DataProductType.S125);
             subscriptionRequestObject.setDataReference(UUID.fromString("c0a8fc1b-8da7-168e-818d-a7881c680000"));
             var subscriptionResponse = secomClient.subscription(subscriptionRequestObject);
@@ -101,7 +102,13 @@ public class UploadSecomController implements UploadSecomInterface {
             acknowledgementObject.setEnvelope(envelopeAckObject);
             secomClient.acknowledgment(acknowledgementObject);
         }
+
         byte[] data = envelope.getData();
+        try {
+            data = Base64.getDecoder().decode(data);
+        } catch (IllegalArgumentException e) {
+            log.debug("The received data was not Base64 encoded: {}", e.getMessage());
+        }
         try {
             mmsAgent.publishMessage(data);
         } catch (UnrecoverableEntryException | InvalidKeyException | CertificateException | NoSuchProviderException |
