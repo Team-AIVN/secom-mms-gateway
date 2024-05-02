@@ -31,7 +31,8 @@ public class KeystoreUtil {
 
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public byte[] signData(byte[] data) throws NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException, UnrecoverableEntryException, InvalidKeyException, SignatureException {
+    public byte[] signData(byte[] data) throws NoSuchAlgorithmException, CertificateException, KeyStoreException,
+            IOException, UnrecoverableEntryException, InvalidKeyException, SignatureException {
         KeyStore keyStore = KeyStore.getInstance(new File(keystorePath), keystorePassword.toCharArray());
         KeyStore.ProtectionParameter protectionParameter = new KeyStore.PasswordProtection(keystorePassword.toCharArray());
         KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(keyAlias, protectionParameter);
