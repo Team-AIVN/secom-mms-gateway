@@ -31,7 +31,6 @@ import java.net.URI;
 import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
 import java.security.UnrecoverableKeyException;
@@ -111,7 +110,7 @@ public class UploadSecomController implements UploadSecomInterface {
         }
         try {
             mmsAgent.publishMessage(data);
-        } catch (UnrecoverableEntryException | InvalidKeyException | CertificateException | NoSuchProviderException |
+        } catch (UnrecoverableEntryException | InvalidKeyException | CertificateException |
                  IOException | KeyStoreException | NoSuchAlgorithmException | SignatureException e) {
             log.error("Could not publish received dataset");
         }

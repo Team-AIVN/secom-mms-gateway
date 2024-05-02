@@ -35,7 +35,6 @@ import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
 import java.security.UnrecoverableKeyException;
@@ -71,7 +70,8 @@ public class MMSAgent {
     }
 
     @PostConstruct
-    public void init() throws URISyntaxException, ExecutionException, InterruptedException, NoSuchAlgorithmException, CertificateException, KeyStoreException, IOException, UnrecoverableKeyException, KeyManagementException, NoSuchProviderException {
+    public void init() throws URISyntaxException, ExecutionException, InterruptedException, NoSuchAlgorithmException,
+            CertificateException, KeyStoreException, IOException, UnrecoverableKeyException, KeyManagementException {
         StandardWebSocketClient webSocketClient = new StandardWebSocketClient();
 
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
@@ -100,7 +100,8 @@ public class MMSAgent {
         lastSentMessage.set(disconnect);
     }
 
-    public void publishMessage(byte[] payload) throws UnrecoverableEntryException, CertificateException, SignatureException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchProviderException, InvalidKeyException {
+    public void publishMessage(byte[] payload) throws UnrecoverableEntryException, CertificateException,
+            SignatureException, NoSuchAlgorithmException, KeyStoreException, IOException, InvalidKeyException {
         Calendar calendar = new GregorianCalendar();
         calendar.add(Calendar.DAY_OF_YEAR, 30);
         long expires = calendar.toInstant().toEpochMilli();
@@ -135,7 +136,9 @@ public class MMSAgent {
         lastSentMessage.set(mmtpMessage);
     }
 
-    private String generateSignature(String subject, long expires, String ownMrn, int bodyLength, byte[] body) throws SignatureException, UnrecoverableEntryException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, NoSuchProviderException, InvalidKeyException {
+    private String generateSignature(String subject, long expires, String ownMrn, int bodyLength, byte[] body)
+            throws SignatureException, UnrecoverableEntryException, CertificateException, NoSuchAlgorithmException,
+            KeyStoreException, IOException, InvalidKeyException {
         List<byte[]> byteArrays = new ArrayList<>();
         byteArrays.add(subject.getBytes());
         byteArrays.add(Long.toString(expires).getBytes());
