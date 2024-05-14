@@ -113,7 +113,7 @@ public class UploadSecomController implements UploadSecomInterface {
         } catch (IllegalArgumentException e) {
             log.debug("The received data was not Base64 encoded: {}", e.getMessage());
         }
-        if (data.length > PAYLOAD_SIZE_LIMIT) {
+        if (data.length > PAYLOAD_SIZE_LIMIT && !envelope.getExchangeMetadata().getCompressionFlag()) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             try (ZipOutputStream zos = new ZipOutputStream(bos)) {
                 zos.putNextEntry(new ZipEntry("data"));
