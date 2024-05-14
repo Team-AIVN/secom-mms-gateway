@@ -26,6 +26,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Path;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.security.InvalidKeyException;
@@ -38,12 +39,16 @@ import java.security.cert.CertificateException;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Component
 @Path("/")
 @Validated
 @Slf4j
 public class UploadSecomController implements UploadSecomInterface {
+
+    private static final int PAYLOAD_SIZE_LIMIT = 50 * (1 << 10); // 50 KiB
 
     @Value("${international.dmc.secom_mms_gateway.secom.serviceUrl}")
     private String secomServiceUrl;
@@ -108,11 +113,27 @@ public class UploadSecomController implements UploadSecomInterface {
         } catch (IllegalArgumentException e) {
             log.debug("The received data was not Base64 encoded: {}", e.getMessage());
         }
-        try {
-            mmsAgent.publishMessage(data);
-        } catch (UnrecoverableEntryException | InvalidKeyException | CertificateException |
-                 IOException | KeyStoreException | NoSuchAlgorithmException | SignatureException e) {
-            log.error("Could not publish received dataset");
+        if (data.length > PAYLOAD_SIZE_LIMIT) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            try (ZipOutputStream zos = new ZipOutputStream(bos)) {
+                zos.putNextEntry(new ZipEntry("data"));
+                zos.write(data);
+                zos.closeEntry();
+                zos.finish();
+                data = bos.toByteArray();
+            } catch (IOException e) {
+                log.error("Error while closing stream", e);
+            }
+        }
+        if (data.length < PAYLOAD_SIZE_LIMIT) {
+            try {
+                mmsAgent.publishMessage(data);
+            } catch (UnrecoverableEntryException | InvalidKeyException | CertificateException |
+                     IOException | KeyStoreException | NoSuchAlgorithmException | SignatureException e) {
+                log.error("Could not publish received dataset", e);
+            }
+        } else {
+            log.warn("Payload size limit exceeded");
         }
 
         return new UploadResponseObject();
