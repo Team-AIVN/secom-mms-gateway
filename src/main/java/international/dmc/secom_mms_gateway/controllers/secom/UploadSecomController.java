@@ -48,7 +48,7 @@ import java.util.zip.ZipOutputStream;
 @Slf4j
 public class UploadSecomController implements UploadSecomInterface {
 
-    private static final int PAYLOAD_SIZE_LIMIT = 50 * (1 << 10); // 50 KiB
+    private static final int PAYLOAD_SIZE_LIMIT = 48 * (1 << 10); // 50 KiB
 
     @Value("${international.dmc.secom_mms_gateway.secom.serviceUrl}")
     private String secomServiceUrl;
