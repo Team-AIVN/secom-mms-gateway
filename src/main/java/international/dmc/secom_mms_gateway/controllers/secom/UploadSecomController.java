@@ -84,8 +84,12 @@ public class UploadSecomController implements UploadSecomInterface {
         if (secomClient != null && subscriptionIdentifier != null) {
             RemoveSubscriptionObject removeSubscriptionObject = new RemoveSubscriptionObject();
             removeSubscriptionObject.setSubscriptionIdentifier(subscriptionIdentifier);
-            var removeSubscriptionResponseObject = secomClient.removeSubscription(removeSubscriptionObject);
-            removeSubscriptionResponseObject.ifPresent(rsro -> log.info(rsro.getMessage()));
+            try {
+                var removeSubscriptionResponseObject = secomClient.removeSubscription(removeSubscriptionObject);
+                removeSubscriptionResponseObject.ifPresent(rsro -> log.info(rsro.getMessage()));
+            } catch (Exception e) {
+                log.error("Error while removing subscription", e);
+            }
         }
     }
 
