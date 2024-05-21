@@ -52,7 +52,7 @@ public class UploadSecomController implements UploadSecomInterface {
 
     @Value("${international.dmc.secom_mms_gateway.secom.serviceUrl}")
     private String secomServiceUrl;
-    @Value("${international.dmc.secom_mms_gateway.secom.dataReference}")
+    @Value("${international.dmc.secom_mms_gateway.secom.dataReference:#{null}}")
     private String secomDataReference;
 
     private final SecomConfigProperties secomConfigProperties;
