@@ -52,8 +52,12 @@ public class UploadSecomController implements UploadSecomInterface {
 
     @Value("${international.dmc.secom_mms_gateway.secom.serviceUrl}")
     private String secomServiceUrl;
+    @Value("${international.dmc.secom_mms_gateway.secom.dataReference}")
+    private String secomDataReference;
+
     private final SecomConfigProperties secomConfigProperties;
     private SecomClient secomClient;
+
     private final MMSAgent mmsAgent;
 
     private UUID subscriptionIdentifier;
@@ -71,6 +75,9 @@ public class UploadSecomController implements UploadSecomInterface {
             SubscriptionRequestObject subscriptionRequestObject = new SubscriptionRequestObject();
             subscriptionRequestObject.setContainerType(ContainerTypeEnum.S100_DataSet);
             subscriptionRequestObject.setDataProductType(SECOM_DataProductType.S125);
+            if (secomDataReference != null && !secomDataReference.isBlank()) {
+                subscriptionRequestObject.setDataReference(UUID.fromString(secomDataReference));
+            }
             var subscriptionResponse = secomClient.subscription(subscriptionRequestObject);
             subscriptionResponse.ifPresent(sro -> {
                 log.info(sro.getMessage());
