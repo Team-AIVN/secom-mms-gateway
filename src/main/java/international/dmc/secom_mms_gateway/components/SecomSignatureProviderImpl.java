@@ -5,11 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.grad.secom.core.base.DigitalSignatureCertificate;
 import org.grad.secom.core.base.SecomSignatureProvider;
 import org.grad.secom.core.models.enums.DigitalSignatureAlgorithmEnum;
+import org.grad.secom.core.utils.SecomPemUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
@@ -18,8 +18,6 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 
 @Component
 @Slf4j
@@ -54,11 +52,9 @@ public class SecomSignatureProviderImpl implements SecomSignatureProvider {
     @Override
     public boolean validateSignature(String signatureCertificate, DigitalSignatureAlgorithmEnum algorithm, byte[] signature, byte[] content) {
         try {
-            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(signatureCertificate.getBytes());
-            X509Certificate x509Certificate = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(byteArrayInputStream);
 
             Signature sign = Signature.getInstance(algorithm.getValue());
-            sign.initVerify(x509Certificate);
+            sign.initVerify(SecomPemUtils.getCertFromPem(signatureCertificate));
             sign.update(content);
 
             return sign.verify(signature);
