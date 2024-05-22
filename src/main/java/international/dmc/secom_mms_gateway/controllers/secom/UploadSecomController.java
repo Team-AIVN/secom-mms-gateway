@@ -103,6 +103,7 @@ public class UploadSecomController implements UploadSecomInterface {
     @Tag(name = "SECOM")
     @Override
     public UploadResponseObject upload(@Valid UploadObject uploadObject) {
+        log.debug("Received upload object");
         EnvelopeUploadObject envelope = uploadObject.getEnvelope();
 
         AckRequestEnum ackRequest = envelope.getAckRequest();
@@ -114,7 +115,11 @@ public class UploadSecomController implements UploadSecomInterface {
 
             AcknowledgementObject acknowledgementObject = new AcknowledgementObject();
             acknowledgementObject.setEnvelope(envelopeAckObject);
-            secomClient.acknowledgment(acknowledgementObject);
+            try {
+                secomClient.acknowledgment(acknowledgementObject);
+            } catch (Exception e) {
+                log.error("Error while acknowledging", e);
+            }
         }
 
         byte[] data = envelope.getData();
