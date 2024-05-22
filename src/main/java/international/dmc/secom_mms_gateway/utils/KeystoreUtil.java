@@ -15,6 +15,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 @Slf4j
 @Component
@@ -49,5 +50,10 @@ public class KeystoreUtil {
 
     public char[] getKeystorePassword() {
         return keystorePassword.toCharArray();
+    }
+
+    public X509Certificate getCertificate() throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException {
+        KeyStore keyStore = getKeystore();
+        return (X509Certificate) keyStore.getCertificate(keyAlias);
     }
 }
