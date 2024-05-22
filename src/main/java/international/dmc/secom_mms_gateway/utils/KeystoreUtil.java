@@ -38,8 +38,8 @@ public class KeystoreUtil {
         KeyStore.PrivateKeyEntry privateKeyEntry = (KeyStore.PrivateKeyEntry) keyStore.getEntry(keyAlias, protectionParameter);
 
         Signature signature = Signature.getInstance(signatureAlgorithm);
-        signature.update(data);
         signature.initSign(privateKeyEntry.getPrivateKey(), secureRandom);
+        signature.update(data);
         return signature.sign();
     }
 
