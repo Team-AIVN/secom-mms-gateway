@@ -1,10 +1,12 @@
 package international.dmc.secom_mms_gateway.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.grad.secom.core.exceptions.SecomGenericException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
@@ -15,6 +17,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
 @Slf4j
@@ -29,6 +32,9 @@ public class KeystoreUtil {
     private String signatureAlgorithm;
     @Value("${international.dmc.secom_mms_gateway.keystore.alias}")
     private String keyAlias;
+
+    @Value("${international.dmc.secom_mms_gateway.rootCA.path}")
+    private String rootCertificatePath;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -52,8 +58,16 @@ public class KeystoreUtil {
         return keystorePassword.toCharArray();
     }
 
-    public X509Certificate getCertificate() throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException {
+    public X509Certificate getSigningCertificate() throws CertificateException, KeyStoreException, IOException, NoSuchAlgorithmException {
         KeyStore keyStore = getKeystore();
         return (X509Certificate) keyStore.getCertificate(keyAlias);
+    }
+
+    public X509Certificate getRootCertificate() {
+        try (FileInputStream fis = new FileInputStream(rootCertificatePath)) {
+            return (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(fis);
+        } catch (IOException | CertificateException e) {
+            throw new SecomGenericException("Was unable to load root certificate");
+        }
     }
 }

@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -117,8 +118,9 @@ public class UploadSecomController implements UploadSecomInterface {
             acknowledgementObject.setEnvelope(envelopeAckObject);
             try {
                 secomClient.acknowledgment(acknowledgementObject);
-            } catch (Exception e) {
+            } catch (WebClientResponseException e) {
                 log.error("Error while acknowledging", e);
+                log.error(e.getResponseBodyAsString());
             }
         }
 
