@@ -19,7 +19,7 @@ import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
 
-@Component
+@Component("signatureProvider")
 @Slf4j
 public class SecomSignatureProviderImpl implements SecomSignatureProvider {
 

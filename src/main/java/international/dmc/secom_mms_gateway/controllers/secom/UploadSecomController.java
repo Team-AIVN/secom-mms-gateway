@@ -3,6 +3,8 @@ package international.dmc.secom_mms_gateway.controllers.secom;
 import international.dmc.secom_mms_gateway.mms.MMSAgent;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
+import org.grad.secom.core.base.SecomCertificateProvider;
+import org.grad.secom.core.base.SecomSignatureProvider;
 import org.grad.secom.core.interfaces.UploadSecomInterface;
 import org.grad.secom.core.models.AcknowledgementObject;
 import org.grad.secom.core.models.EnvelopeAckObject;
@@ -56,7 +58,11 @@ public class UploadSecomController implements UploadSecomInterface {
     @Value("${international.dmc.secom_mms_gateway.secom.dataReference:#{null}}")
     private String secomDataReference;
 
+
     private final SecomConfigProperties secomConfigProperties;
+    private SecomCertificateProvider secomCertificateProvider;
+    private SecomSignatureProvider secomSignatureProvider;
+
     private SecomClient secomClient;
 
     private final MMSAgent mmsAgent;
@@ -64,8 +70,13 @@ public class UploadSecomController implements UploadSecomInterface {
     private UUID subscriptionIdentifier;
 
     @Autowired
-    public UploadSecomController(SecomConfigProperties secomConfigProperties, MMSAgent mmsAgent) {
+    public UploadSecomController(SecomConfigProperties secomConfigProperties,
+                                 SecomCertificateProvider secomCertificateProvider,
+                                 SecomSignatureProvider secomSignatureProvider,
+                                 MMSAgent mmsAgent) {
         this.secomConfigProperties = secomConfigProperties;
+        this.secomCertificateProvider = secomCertificateProvider;
+        this.secomSignatureProvider = secomSignatureProvider;
         this.mmsAgent = mmsAgent;
     }
 
@@ -73,6 +84,8 @@ public class UploadSecomController implements UploadSecomInterface {
     public void init() throws UnrecoverableKeyException, CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException {
         if (secomServiceUrl != null && !secomServiceUrl.isBlank()) {
             secomClient = new SecomClient(URI.create(secomServiceUrl).toURL(), secomConfigProperties);
+            secomClient.setCertificateProvider(secomCertificateProvider);
+            secomClient.setSignatureProvider(secomSignatureProvider);
             SubscriptionRequestObject subscriptionRequestObject = new SubscriptionRequestObject();
             subscriptionRequestObject.setContainerType(ContainerTypeEnum.S100_DataSet);
             subscriptionRequestObject.setDataProductType(SECOM_DataProductType.S125);
@@ -107,23 +120,6 @@ public class UploadSecomController implements UploadSecomInterface {
         log.debug("Received upload object");
         EnvelopeUploadObject envelope = uploadObject.getEnvelope();
 
-        AckRequestEnum ackRequest = envelope.getAckRequest();
-        if (secomClient != null && ackRequest != null && !ackRequest.equals(AckRequestEnum.NO_ACK_REQUESTED)) {
-            EnvelopeAckObject envelopeAckObject = new EnvelopeAckObject();
-            envelopeAckObject.setCreatedAt(LocalDateTime.now());
-            envelopeAckObject.setTransactionIdentifier(envelope.getTransactionIdentifier());
-            envelopeAckObject.setAckType(AckTypeEnum.DELIVERED_ACK);
-
-            AcknowledgementObject acknowledgementObject = new AcknowledgementObject();
-            acknowledgementObject.setEnvelope(envelopeAckObject);
-            try {
-                secomClient.acknowledgment(acknowledgementObject);
-            } catch (WebClientResponseException e) {
-                log.error("Error while acknowledging", e);
-                log.error(e.getResponseBodyAsString());
-            }
-        }
-
         byte[] data = envelope.getData();
         try {
             data = Base64.getDecoder().decode(data);
@@ -152,6 +148,23 @@ public class UploadSecomController implements UploadSecomInterface {
         } else {
             log.warn("Payload size limit exceeded");
         }
+
+//        AckRequestEnum ackRequest = envelope.getAckRequest();
+//        if (secomClient != null && ackRequest != null && !ackRequest.equals(AckRequestEnum.NO_ACK_REQUESTED)) {
+//            EnvelopeAckObject envelopeAckObject = new EnvelopeAckObject();
+//            envelopeAckObject.setCreatedAt(LocalDateTime.now());
+//            envelopeAckObject.setTransactionIdentifier(envelope.getTransactionIdentifier());
+//            envelopeAckObject.setAckType(AckTypeEnum.DELIVERED_ACK);
+//
+//            AcknowledgementObject acknowledgementObject = new AcknowledgementObject();
+//            acknowledgementObject.setEnvelope(envelopeAckObject);
+//            try {
+//                secomClient.acknowledgment(acknowledgementObject);
+//            } catch (WebClientResponseException e) {
+//                log.error("Error while acknowledging", e);
+//                log.error(e.getResponseBodyAsString());
+//            }
+//        }
 
         return new UploadResponseObject();
     }

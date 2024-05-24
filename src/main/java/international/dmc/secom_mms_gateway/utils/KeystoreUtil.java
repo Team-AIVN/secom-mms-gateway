@@ -33,7 +33,7 @@ public class KeystoreUtil {
     @Value("${international.dmc.secom_mms_gateway.keystore.alias}")
     private String keyAlias;
 
-    @Value("${international.dmc.secom_mms_gateway.rootCA.path}")
+    @Value("${international.dmc.secom_mms_gateway.rootCA.path:root.pem}")
     private String rootCertificatePath;
 
     private final SecureRandom secureRandom = new SecureRandom();
@@ -64,9 +64,11 @@ public class KeystoreUtil {
     }
 
     public X509Certificate getRootCertificate() {
+        log.debug("Getting root certificate");
         try (FileInputStream fis = new FileInputStream(rootCertificatePath)) {
             return (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(fis);
         } catch (IOException | CertificateException e) {
+            log.error("Error getting root certificate", e);
             throw new SecomGenericException("Was unable to load root certificate");
         }
     }

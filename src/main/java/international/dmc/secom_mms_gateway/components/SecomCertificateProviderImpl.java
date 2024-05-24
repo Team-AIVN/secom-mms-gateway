@@ -16,7 +16,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 @Slf4j
-@Component
+@Component("certificateProvider")
 public class SecomCertificateProviderImpl implements SecomCertificateProvider {
     @Value("${spring.application.name}")
     private String applicationName;
@@ -30,10 +30,12 @@ public class SecomCertificateProviderImpl implements SecomCertificateProvider {
 
     @Override
     public DigitalSignatureCertificate getDigitalSignatureCertificate() {
+        log.debug("getDigitalSignatureCertificate");
         X509Certificate certificate;
         try {
             certificate = keystoreUtil.getSigningCertificate();
         } catch (CertificateException | NoSuchAlgorithmException | IOException | KeyStoreException e) {
+            log.error("Was not able to get signing certificate", e);
             throw new SecomGenericException("Was not able to get Digital Signature Certificate");
         }
 
