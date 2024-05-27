@@ -1,6 +1,7 @@
 package international.dmc.secom_mms_gateway.controllers.secom;
 
 import international.dmc.secom_mms_gateway.mms.MMSAgent;
+import international.dmc.secom_mms_gateway.utils.DataProductTypeParser;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.grad.secom.core.base.SecomCertificateProvider;
@@ -57,7 +58,8 @@ public class UploadSecomController implements UploadSecomInterface {
     private String secomServiceUrl;
     @Value("${international.dmc.secom_mms_gateway.secom.dataReference:#{null}}")
     private String secomDataReference;
-
+    @Value("${international.dmc.secom_mms_gateway.secom.dataProductType:OTHER}")
+    private String secomDataProductType;
 
     private final SecomConfigProperties secomConfigProperties;
     private SecomCertificateProvider secomCertificateProvider;
@@ -88,7 +90,7 @@ public class UploadSecomController implements UploadSecomInterface {
             secomClient.setSignatureProvider(secomSignatureProvider);
             SubscriptionRequestObject subscriptionRequestObject = new SubscriptionRequestObject();
             subscriptionRequestObject.setContainerType(ContainerTypeEnum.S100_DataSet);
-            subscriptionRequestObject.setDataProductType(SECOM_DataProductType.S125);
+            subscriptionRequestObject.setDataProductType(DataProductTypeParser.getDataProductType(secomDataProductType));
             if (secomDataReference != null && !secomDataReference.isBlank()) {
                 subscriptionRequestObject.setDataReference(UUID.fromString(secomDataReference));
             }
