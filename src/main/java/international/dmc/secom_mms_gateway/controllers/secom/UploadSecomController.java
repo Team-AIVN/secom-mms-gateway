@@ -1,5 +1,7 @@
 package international.dmc.secom_mms_gateway.controllers.secom;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import international.dmc.secom_mms_gateway.mms.MMSAgent;
 import international.dmc.secom_mms_gateway.utils.DataProductTypeParser;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,7 +19,6 @@ import org.grad.secom.core.models.UploadResponseObject;
 import org.grad.secom.core.models.enums.AckRequestEnum;
 import org.grad.secom.core.models.enums.AckTypeEnum;
 import org.grad.secom.core.models.enums.ContainerTypeEnum;
-import org.grad.secom.core.models.enums.SECOM_DataProductType;
 import org.grad.secom.springboot3.components.SecomClient;
 import org.grad.secom.springboot3.components.SecomConfigProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,6 +121,12 @@ public class UploadSecomController implements UploadSecomInterface {
     @Override
     public UploadResponseObject upload(@Valid UploadObject uploadObject) {
         log.debug("Received upload object");
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            log.debug(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(uploadObject));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
         EnvelopeUploadObject envelope = uploadObject.getEnvelope();
 
         byte[] data = envelope.getData();
@@ -151,22 +158,22 @@ public class UploadSecomController implements UploadSecomInterface {
             log.warn("Payload size limit exceeded");
         }
 
-//        AckRequestEnum ackRequest = envelope.getAckRequest();
-//        if (secomClient != null && ackRequest != null && !ackRequest.equals(AckRequestEnum.NO_ACK_REQUESTED)) {
-//            EnvelopeAckObject envelopeAckObject = new EnvelopeAckObject();
-//            envelopeAckObject.setCreatedAt(LocalDateTime.now());
-//            envelopeAckObject.setTransactionIdentifier(envelope.getTransactionIdentifier());
-//            envelopeAckObject.setAckType(AckTypeEnum.DELIVERED_ACK);
-//
-//            AcknowledgementObject acknowledgementObject = new AcknowledgementObject();
-//            acknowledgementObject.setEnvelope(envelopeAckObject);
-//            try {
-//                secomClient.acknowledgment(acknowledgementObject);
-//            } catch (WebClientResponseException e) {
-//                log.error("Error while acknowledging", e);
-//                log.error(e.getResponseBodyAsString());
-//            }
-//        }
+        AckRequestEnum ackRequest = envelope.getAckRequest();
+        if (secomClient != null && ackRequest != null && !ackRequest.equals(AckRequestEnum.NO_ACK_REQUESTED)) {
+            EnvelopeAckObject envelopeAckObject = new EnvelopeAckObject();
+            envelopeAckObject.setCreatedAt(LocalDateTime.now());
+            envelopeAckObject.setTransactionIdentifier(envelope.getTransactionIdentifier());
+            envelopeAckObject.setAckType(AckTypeEnum.DELIVERED_ACK);
+
+            AcknowledgementObject acknowledgementObject = new AcknowledgementObject();
+            acknowledgementObject.setEnvelope(envelopeAckObject);
+            try {
+                secomClient.acknowledgment(acknowledgementObject);
+            } catch (WebClientResponseException e) {
+                log.error("Error while acknowledging", e);
+                log.error(e.getResponseBodyAsString());
+            }
+        }
 
         return new UploadResponseObject();
     }

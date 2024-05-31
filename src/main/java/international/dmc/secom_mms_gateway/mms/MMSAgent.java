@@ -75,7 +75,7 @@ public class MMSAgent {
         StandardWebSocketClient webSocketClient = new StandardWebSocketClient();
 
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keystoreUtil.getKeystore(), keystoreUtil.getKeystorePassword());
+        keyManagerFactory.init(keystoreUtil.getMmsKeystore(), keystoreUtil.getMmsKeystorePassword());
 
         SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
@@ -150,7 +150,7 @@ public class MMSAgent {
             bytesToBeSigned = ArrayUtils.addAll(bytesToBeSigned, bytes);
         }
 
-        byte[] signature = keystoreUtil.signData(bytesToBeSigned);
+        byte[] signature = keystoreUtil.signDataMMS(bytesToBeSigned);
         return Base64.getEncoder().encodeToString(signature);
     }
 

@@ -18,6 +18,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
+import java.util.HexFormat;
 
 @Component("signatureProvider")
 @Slf4j
@@ -41,7 +42,9 @@ public class SecomSignatureProviderImpl implements SecomSignatureProvider {
     @Override
     public byte[] generateSignature(DigitalSignatureCertificate signatureCertificate, DigitalSignatureAlgorithmEnum algorithm, byte[] payload) {
         try {
-            return keystoreUtil.signData(payload);
+            byte[] signature = keystoreUtil.signDataSecom(payload, defaultSigningAlgorithm);
+            log.debug(HexFormat.of().formatHex(signature));
+            return signature;
         } catch (NoSuchAlgorithmException | SignatureException | CertificateException |
                  KeyStoreException | IOException | UnrecoverableEntryException | InvalidKeyException e) {
             log.error(e.getMessage());
@@ -52,7 +55,6 @@ public class SecomSignatureProviderImpl implements SecomSignatureProvider {
     @Override
     public boolean validateSignature(String signatureCertificate, DigitalSignatureAlgorithmEnum algorithm, byte[] signature, byte[] content) {
         try {
-
             Signature sign = Signature.getInstance(algorithm.getValue());
             sign.initVerify(SecomPemUtils.getCertFromPem(signatureCertificate));
             sign.update(content);

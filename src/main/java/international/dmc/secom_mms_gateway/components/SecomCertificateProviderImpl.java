@@ -33,7 +33,7 @@ public class SecomCertificateProviderImpl implements SecomCertificateProvider {
         log.debug("getDigitalSignatureCertificate");
         X509Certificate certificate;
         try {
-            certificate = keystoreUtil.getSigningCertificate();
+            certificate = keystoreUtil.getSigningSecomCertificate();
         } catch (CertificateException | NoSuchAlgorithmException | IOException | KeyStoreException e) {
             log.error("Was not able to get signing certificate", e);
             throw new SecomGenericException("Was not able to get Digital Signature Certificate");
