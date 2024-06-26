@@ -40,7 +40,6 @@ import java.security.UnrecoverableEntryException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -106,7 +105,7 @@ public class MMSAgent {
         calendar.add(Calendar.DAY_OF_YEAR, 30);
         long expires = calendar.toInstant().toEpochMilli();
 
-        String signature = generateSignature(subject, expires, ownMrn, payload.length, payload);
+        byte[] signature = generateSignature(subject, expires, ownMrn, payload.length, payload);
 
         MmtpMessage mmtpMessage = MmtpMessage.newBuilder()
                 .setMsgType(MsgType.PROTOCOL_MESSAGE)
@@ -121,7 +120,7 @@ public class MMSAgent {
                                                 .setSubject(subject)
                                                 .setSender(ownMrn)
                                                 .build())
-                                        .setSignature(signature)
+                                        .setSignature(ByteString.copyFrom(signature))
                                         .setBody(ByteString.copyFrom(payload))
                                         .build())
                                 .build())
@@ -136,7 +135,7 @@ public class MMSAgent {
         lastSentMessage.set(mmtpMessage);
     }
 
-    private String generateSignature(String subject, long expires, String ownMrn, int bodyLength, byte[] body)
+    private byte[] generateSignature(String subject, long expires, String ownMrn, int bodyLength, byte[] body)
             throws SignatureException, UnrecoverableEntryException, CertificateException, NoSuchAlgorithmException,
             KeyStoreException, IOException, InvalidKeyException {
         List<byte[]> byteArrays = new ArrayList<>();
@@ -150,8 +149,7 @@ public class MMSAgent {
             bytesToBeSigned = ArrayUtils.addAll(bytesToBeSigned, bytes);
         }
 
-        byte[] signature = keystoreUtil.signDataMMS(bytesToBeSigned);
-        return Base64.getEncoder().encodeToString(signature);
+        return keystoreUtil.signDataMMS(bytesToBeSigned);
     }
 
     private class MMSWebsocketHandler extends BinaryWebSocketHandler {
