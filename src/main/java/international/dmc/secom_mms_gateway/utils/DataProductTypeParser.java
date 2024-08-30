@@ -1,7 +1,10 @@
 package international.dmc.secom_mms_gateway.utils;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.grad.secom.core.models.enums.SECOM_DataProductType;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DataProductTypeParser {
 
     public static SECOM_DataProductType getDataProductType(String dataProductType) {
