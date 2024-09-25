@@ -47,7 +47,7 @@ public class SecomSignatureProviderImpl implements SecomSignatureProvider {
             return signature;
         } catch (NoSuchAlgorithmException | SignatureException | CertificateException |
                  KeyStoreException | IOException | UnrecoverableEntryException | InvalidKeyException e) {
-            log.error(e.getMessage());
+            log.error("Signature generation failed:", e);
             return new byte[0];
         }
     }
@@ -61,7 +61,7 @@ public class SecomSignatureProviderImpl implements SecomSignatureProvider {
 
             return sign.verify(signature);
         } catch (NoSuchAlgorithmException | CertificateException | InvalidKeyException | SignatureException e) {
-            log.error(e.getMessage());
+            log.error("Signature verification failed:", e);
             return false;
         }
     }
