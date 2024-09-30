@@ -91,9 +91,8 @@ public class MMSAgent {
                 .setUuid(UUID.randomUUID().toString())
                 .setProtocolMessage(ProtocolMessage.newBuilder()
                         .setProtocolMsgType(ProtocolMessageType.DISCONNECT_MESSAGE)
-                        .setDisconnectMessage(Disconnect.newBuilder()
-                                .build())
-                        .build())
+                        .setDisconnectMessage(Disconnect.newBuilder())
+                )
                 .build();
         sendMessage(disconnect);
         lastSentMessage.set(disconnect);
@@ -116,12 +115,12 @@ public class MMSAgent {
                                                 .setBodySizeNumBytes(payload.length)
                                                 .setSubject(subject)
                                                 .setSender(ownMrn)
-                                                .build())
+                                        )
                                         .setSignature(ByteString.copyFrom(signature))
                                         .setBody(ByteString.copyFrom(payload))
-                                        .build())
-                                .build())
-                        .build())
+                                )
+                        )
+                )
                 .build();
         sendMessage(mmtpMessage);
     }
@@ -160,8 +159,8 @@ public class MMSAgent {
                             .setProtocolMsgType(ProtocolMessageType.CONNECT_MESSAGE)
                             .setConnectMessage(Connect.newBuilder()
                                     .setOwnMrn(ownMrn)
-                                    .build())
-                            .build())
+                            )
+                    )
                     .build();
             byte[] bytes = mmtpMessage.toByteArray();
             session.sendMessage(new BinaryMessage(bytes));
