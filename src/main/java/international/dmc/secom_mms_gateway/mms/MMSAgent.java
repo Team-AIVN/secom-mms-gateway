@@ -39,9 +39,9 @@ import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -101,10 +101,7 @@ public class MMSAgent {
 
     public void publishMessage(byte[] payload) throws UnrecoverableEntryException, CertificateException,
             SignatureException, NoSuchAlgorithmException, KeyStoreException, IOException, InvalidKeyException {
-        Calendar calendar = new GregorianCalendar();
-        calendar.add(Calendar.DAY_OF_YEAR, 30);
-        long expires = calendar.toInstant().toEpochMilli();
-
+        long expires = Instant.now().plus(30, ChronoUnit.DAYS).getEpochSecond();
         byte[] signature = generateSignature(subject, expires, ownMrn, payload.length, payload);
 
         MmtpMessage mmtpMessage = MmtpMessage.newBuilder()
