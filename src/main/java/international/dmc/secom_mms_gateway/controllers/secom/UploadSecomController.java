@@ -3,51 +3,44 @@ package international.dmc.secom_mms_gateway.controllers.secom;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import international.dmc.secom_mms_gateway.mms.MMSAgent;
+import international.dmc.secom_mms_gateway.model.Subscription;
 import international.dmc.secom_mms_gateway.services.SubscriptionService;
-import international.dmc.secom_mms_gateway.utils.DataProductTypeParser;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.util.encoders.Hex;
-import org.grad.secom.core.base.SecomCertificateProvider;
-import org.grad.secom.core.base.SecomSignatureProvider;
+import net.maritimeconnectivity.pki.CertificateHandler;
+import org.bouncycastle.asn1.x500.RDN;
+import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.asn1.x500.style.IETFUtils;
 import org.grad.secom.core.interfaces.UploadSecomInterface;
 import org.grad.secom.core.models.AcknowledgementObject;
 import org.grad.secom.core.models.EnvelopeAckObject;
 import org.grad.secom.core.models.EnvelopeUploadObject;
-import org.grad.secom.core.models.RemoveSubscriptionObject;
-import org.grad.secom.core.models.SubscriptionRequestObject;
 import org.grad.secom.core.models.UploadObject;
 import org.grad.secom.core.models.UploadResponseObject;
 import org.grad.secom.core.models.enums.AckRequestEnum;
 import org.grad.secom.core.models.enums.AckTypeEnum;
-import org.grad.secom.core.models.enums.ContainerTypeEnum;
-import org.grad.secom.springboot3.components.SecomClient;
-import org.grad.secom.springboot3.components.SecomConfigProperties;
+import org.grad.secom.core.models.enums.SECOM_ResponseCodeEnum;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Path;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.UnrecoverableEntryException;
-import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.HexFormat;
-import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -69,38 +62,9 @@ public class UploadSecomController implements UploadSecomInterface {
         this.mmsAgent = mmsAgent;
     }
 
-//    @PostConstruct
-//    public void init() throws UnrecoverableKeyException, CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException {
-//        if (secomServiceUrl != null && !secomServiceUrl.isBlank()) {
-//            secomClient = new SecomClient(URI.create(secomServiceUrl).toURL(), secomConfigProperties);
-//            secomClient.setCertificateProvider(secomCertificateProvider);
-//            secomClient.setSignatureProvider(secomSignatureProvider);
-//            SubscriptionRequestObject subscriptionRequestObject = new SubscriptionRequestObject();
-//            subscriptionRequestObject.setContainerType(ContainerTypeEnum.S100_DataSet);
-//            subscriptionRequestObject.setDataProductType(DataProductTypeParser.getDataProductType(secomDataProductType));
-//            if (secomDataReference != null && !secomDataReference.isBlank()) {
-//                subscriptionRequestObject.setDataReference(UUID.fromString(secomDataReference));
-//            }
-//            var subscriptionResponse = secomClient.subscription(subscriptionRequestObject);
-//            subscriptionResponse.ifPresent(sro -> {
-//                log.info(sro.getMessage());
-//                subscriptionIdentifier = sro.getSubscriptionIdentifier();
-//            });
-//        }
-//    }
-
     @PreDestroy
     public void preDestroy() {
-        if (secomClient != null && subscriptionIdentifier != null) {
-            RemoveSubscriptionObject removeSubscriptionObject = new RemoveSubscriptionObject();
-            removeSubscriptionObject.setSubscriptionIdentifier(subscriptionIdentifier);
-            try {
-                var removeSubscriptionResponseObject = secomClient.removeSubscription(removeSubscriptionObject);
-                removeSubscriptionResponseObject.ifPresent(rsro -> log.info(rsro.getMessage()));
-            } catch (Exception e) {
-                log.error("Error while removing subscription", e);
-            }
-        }
+        subscriptionService.removeAllSubscriptions();
     }
 
     @Tag(name = "SECOM")
@@ -111,9 +75,35 @@ public class UploadSecomController implements UploadSecomInterface {
         try {
             log.debug(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(uploadObject));
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            log.error("Could not serialize upload object", e);
         }
         EnvelopeUploadObject envelope = uploadObject.getEnvelope();
+
+        String certificate = envelope.getEnvelopeSignatureCertificate();
+        byte[] certificateBytes = Base64.getDecoder().decode(certificate);
+
+        X509Certificate x509Certificate;
+        try {
+            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+            x509Certificate = (X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(certificateBytes));
+        } catch (CertificateException e) {
+            log.error("Could not parse certificate in upload object", e);
+            UploadResponseObject uploadResponseObject = new UploadResponseObject();
+            uploadResponseObject.setSECOM_ResponseCode(SECOM_ResponseCodeEnum.INVALID_CERTIFICATE);
+            return uploadResponseObject;
+        }
+
+        String certDn = x509Certificate.getSubjectX500Principal().getName();
+        RDN[] rdns = IETFUtils.rDNsFromString(certDn, BCStyle.INSTANCE);
+        String uploaderMrn = CertificateHandler.getElement(rdns, BCStyle.UID);
+
+        Subscription subscription = subscriptionService.getSubscription(uploaderMrn);
+        if (subscription == null) {
+            UploadResponseObject uploadResponseObject = new UploadResponseObject();
+            uploadResponseObject.setSECOM_ResponseCode(SECOM_ResponseCodeEnum.MISSING_REQUIRED_DATA_FOR_SERVICE);
+            uploadResponseObject.setResponseText("No subscription found");
+            return uploadResponseObject;
+        }
 
         byte[] data = envelope.getData();
         try {
@@ -145,7 +135,7 @@ public class UploadSecomController implements UploadSecomInterface {
         }
 
         AckRequestEnum ackRequest = envelope.getAckRequest();
-        if (secomClient != null && ackRequest != null && !ackRequest.equals(AckRequestEnum.NO_ACK_REQUESTED)) {
+        if (ackRequest != null && !ackRequest.equals(AckRequestEnum.NO_ACK_REQUESTED)) {
             EnvelopeAckObject envelopeAckObject = new EnvelopeAckObject();
             envelopeAckObject.setCreatedAt(LocalDateTime.now());
             envelopeAckObject.setTransactionIdentifier(envelope.getTransactionIdentifier());
@@ -154,7 +144,7 @@ public class UploadSecomController implements UploadSecomInterface {
             AcknowledgementObject acknowledgementObject = new AcknowledgementObject();
             acknowledgementObject.setEnvelope(envelopeAckObject);
             try {
-                secomClient.acknowledgment(acknowledgementObject);
+                subscription.getSecomClient().acknowledgment(acknowledgementObject);
             } catch (WebClientResponseException e) {
                 log.error("Error while acknowledging", e);
                 log.error(e.getResponseBodyAsString());

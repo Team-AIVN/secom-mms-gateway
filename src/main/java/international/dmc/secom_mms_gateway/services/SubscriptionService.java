@@ -77,4 +77,8 @@ public class SubscriptionService {
         subscriptions.remove(serviceMrn);
         return true;
     }
+
+    public void removeAllSubscriptions() {
+        subscriptions.values().forEach(subscription -> removeSubscription(subscription.getServiceMrn()));
+    }
 }
