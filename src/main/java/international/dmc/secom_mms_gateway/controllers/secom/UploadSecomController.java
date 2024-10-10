@@ -3,9 +3,11 @@ package international.dmc.secom_mms_gateway.controllers.secom;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import international.dmc.secom_mms_gateway.mms.MMSAgent;
+import international.dmc.secom_mms_gateway.services.SubscriptionService;
 import international.dmc.secom_mms_gateway.utils.DataProductTypeParser;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.util.encoders.Hex;
 import org.grad.secom.core.base.SecomCertificateProvider;
 import org.grad.secom.core.base.SecomSignatureProvider;
 import org.grad.secom.core.interfaces.UploadSecomInterface;
@@ -34,6 +36,7 @@ import jakarta.ws.rs.Path;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -43,6 +46,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.HexFormat;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -55,53 +59,35 @@ public class UploadSecomController implements UploadSecomInterface {
 
     private static final int PAYLOAD_SIZE_LIMIT = 48 * (1 << 10); // 48 KiB
 
-    @Value("${international.dmc.secom_mms_gateway.secom.serviceUrl}")
-    private String secomServiceUrl;
-    @Value("${international.dmc.secom_mms_gateway.secom.dataReference:#{null}}")
-    private String secomDataReference;
-    @Value("${international.dmc.secom_mms_gateway.secom.dataProductType:OTHER}")
-    private String secomDataProductType;
-
-    private final SecomConfigProperties secomConfigProperties;
-    private SecomCertificateProvider secomCertificateProvider;
-    private SecomSignatureProvider secomSignatureProvider;
-
-    private SecomClient secomClient;
+    private final SubscriptionService subscriptionService;
 
     private final MMSAgent mmsAgent;
 
-    private UUID subscriptionIdentifier;
-
     @Autowired
-    public UploadSecomController(SecomConfigProperties secomConfigProperties,
-                                 SecomCertificateProvider secomCertificateProvider,
-                                 SecomSignatureProvider secomSignatureProvider,
-                                 MMSAgent mmsAgent) {
-        this.secomConfigProperties = secomConfigProperties;
-        this.secomCertificateProvider = secomCertificateProvider;
-        this.secomSignatureProvider = secomSignatureProvider;
+    public UploadSecomController(SubscriptionService subscriptionService, MMSAgent mmsAgent) {
+        this.subscriptionService = subscriptionService;
         this.mmsAgent = mmsAgent;
     }
 
-    @PostConstruct
-    public void init() throws UnrecoverableKeyException, CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException {
-        if (secomServiceUrl != null && !secomServiceUrl.isBlank()) {
-            secomClient = new SecomClient(URI.create(secomServiceUrl).toURL(), secomConfigProperties);
-            secomClient.setCertificateProvider(secomCertificateProvider);
-            secomClient.setSignatureProvider(secomSignatureProvider);
-            SubscriptionRequestObject subscriptionRequestObject = new SubscriptionRequestObject();
-            subscriptionRequestObject.setContainerType(ContainerTypeEnum.S100_DataSet);
-            subscriptionRequestObject.setDataProductType(DataProductTypeParser.getDataProductType(secomDataProductType));
-            if (secomDataReference != null && !secomDataReference.isBlank()) {
-                subscriptionRequestObject.setDataReference(UUID.fromString(secomDataReference));
-            }
-            var subscriptionResponse = secomClient.subscription(subscriptionRequestObject);
-            subscriptionResponse.ifPresent(sro -> {
-                log.info(sro.getMessage());
-                subscriptionIdentifier = sro.getSubscriptionIdentifier();
-            });
-        }
-    }
+//    @PostConstruct
+//    public void init() throws UnrecoverableKeyException, CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException {
+//        if (secomServiceUrl != null && !secomServiceUrl.isBlank()) {
+//            secomClient = new SecomClient(URI.create(secomServiceUrl).toURL(), secomConfigProperties);
+//            secomClient.setCertificateProvider(secomCertificateProvider);
+//            secomClient.setSignatureProvider(secomSignatureProvider);
+//            SubscriptionRequestObject subscriptionRequestObject = new SubscriptionRequestObject();
+//            subscriptionRequestObject.setContainerType(ContainerTypeEnum.S100_DataSet);
+//            subscriptionRequestObject.setDataProductType(DataProductTypeParser.getDataProductType(secomDataProductType));
+//            if (secomDataReference != null && !secomDataReference.isBlank()) {
+//                subscriptionRequestObject.setDataReference(UUID.fromString(secomDataReference));
+//            }
+//            var subscriptionResponse = secomClient.subscription(subscriptionRequestObject);
+//            subscriptionResponse.ifPresent(sro -> {
+//                log.info(sro.getMessage());
+//                subscriptionIdentifier = sro.getSubscriptionIdentifier();
+//            });
+//        }
+//    }
 
     @PreDestroy
     public void preDestroy() {
@@ -147,7 +133,7 @@ public class UploadSecomController implements UploadSecomInterface {
                 log.error("Error while closing stream", e);
             }
         }
-        if (data.length < PAYLOAD_SIZE_LIMIT) {
+        if (data.length <= PAYLOAD_SIZE_LIMIT) {
             try {
                 mmsAgent.publishMessage(data);
             } catch (UnrecoverableEntryException | InvalidKeyException | CertificateException |
