@@ -125,7 +125,7 @@ public class UploadSecomController implements UploadSecomInterface {
         }
         if (data.length <= PAYLOAD_SIZE_LIMIT) {
             try {
-                mmsAgent.publishMessage(data);
+                mmsAgent.publishMessage(data, subscription.getMmsSubject());
             } catch (UnrecoverableEntryException | InvalidKeyException | CertificateException |
                      IOException | KeyStoreException | NoSuchAlgorithmException | SignatureException e) {
                 log.error("Could not publish received dataset", e);

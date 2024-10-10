@@ -55,8 +55,6 @@ public class MMSAgent {
     private String edgeRouterURL;
     @Value("${international.dmc.secom_mms_gateway.mms.own-mrn}")
     private String ownMrn;
-    @Value("${international.dmc.secom_mms_gateway.mms.mms-subject}")
-    private String subject;
 
     private final KeystoreUtil keystoreUtil;
     private final AtomicReference<MmtpMessage> lastSentMessage = new AtomicReference<>();
@@ -98,7 +96,7 @@ public class MMSAgent {
         lastSentMessage.set(disconnect);
     }
 
-    public void publishMessage(byte[] payload) throws UnrecoverableEntryException, CertificateException,
+    public void publishMessage(byte[] payload, String subject) throws UnrecoverableEntryException, CertificateException,
             SignatureException, NoSuchAlgorithmException, KeyStoreException, IOException, InvalidKeyException {
         long expires = Instant.now().plus(30, ChronoUnit.DAYS).getEpochSecond();
         byte[] signature = generateSignature(subject, expires, ownMrn, payload.length, payload);

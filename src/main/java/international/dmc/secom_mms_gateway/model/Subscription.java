@@ -16,7 +16,8 @@ public class Subscription implements JsonSerializable {
     private ContainerTypeEnum containerType;
     private String dataProductType;
     private String dataReference;
+    private UUID subscriptionId;
+    private String mmsSubject;
     @JsonIgnore
     private SecomClient secomClient;
-    private UUID subscriptionId;
 }
