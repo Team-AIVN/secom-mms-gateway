@@ -20,7 +20,9 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,6 +45,10 @@ public class SubscriptionService {
 
     public Subscription getSubscription(String serviceMrn) {
         return subscriptions.get(serviceMrn);
+    }
+
+    public List<Subscription> getAllSubscriptions() {
+        return new ArrayList<>(subscriptions.values());
     }
 
     public Subscription addSubscription(Subscription subscription) throws UnrecoverableKeyException, CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException {

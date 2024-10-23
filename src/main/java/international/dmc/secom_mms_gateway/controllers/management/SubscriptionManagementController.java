@@ -17,6 +17,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.List;
 
 @RestController
 @RequestMapping(value = "management")
@@ -55,6 +56,15 @@ public class SubscriptionManagementController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(subscription);
+    }
+
+    @GetMapping(
+            value = "/subscriptions",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<List<Subscription>> getAllSubscriptions() {
+        List<Subscription> subscriptions = subscriptionService.getAllSubscriptions();
+        return ResponseEntity.ok(subscriptions);
     }
 
     @DeleteMapping(
