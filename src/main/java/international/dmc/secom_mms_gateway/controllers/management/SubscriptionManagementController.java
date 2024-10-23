@@ -30,6 +30,7 @@ public class SubscriptionManagementController {
     }
 
     @PostMapping(
+            value = "/subscription",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
@@ -45,7 +46,7 @@ public class SubscriptionManagementController {
     }
 
     @GetMapping(
-            value = "/mrn/{mrn}",
+            value = "/subscription/mrn/{mrn}",
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<Subscription> getSubscriptionByMrn(@PathVariable String mrn) {
@@ -57,7 +58,7 @@ public class SubscriptionManagementController {
     }
 
     @DeleteMapping(
-            value = "/mrn/{mrn}",
+            value = "/subscription/mrn/{mrn}",
             produces = MediaType.TEXT_PLAIN_VALUE
     )
     public ResponseEntity<Void> deleteSubscriptionByMrn(@PathVariable String mrn) {
