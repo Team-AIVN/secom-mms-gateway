@@ -97,7 +97,7 @@ public class UploadSecomController implements UploadSecomInterface {
         RDN[] rdns = IETFUtils.rDNsFromString(certDn, BCStyle.INSTANCE);
         String uploaderMrn = CertificateHandler.getElement(rdns, BCStyle.UID);
 
-        Subscription subscription = subscriptionService.getSubscription(uploaderMrn);
+        Subscription subscription = subscriptionService.getSubscriptionByMrn(uploaderMrn);
         if (subscription == null) {
             UploadResponseObject uploadResponseObject = new UploadResponseObject();
             uploadResponseObject.setSECOM_ResponseCode(SECOM_ResponseCodeEnum.MISSING_REQUIRED_DATA_FOR_SERVICE);

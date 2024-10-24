@@ -52,7 +52,19 @@ public class SubscriptionManagementController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<Subscription> getSubscriptionByMrn(@PathVariable String mrn) {
-        Subscription subscription = subscriptionService.getSubscription(mrn);
+        Subscription subscription = subscriptionService.getSubscriptionByMrn(mrn);
+        if (subscription == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(subscription);
+    }
+
+    @GetMapping(
+            value = "/subscription/id/{id}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<Subscription> getSubscriptionById(@PathVariable String id) {
+        Subscription subscription = subscriptionService.getSubscriptionById(id);
         if (subscription == null) {
             return ResponseEntity.notFound().build();
         }
@@ -73,11 +85,27 @@ public class SubscriptionManagementController {
             produces = MediaType.TEXT_PLAIN_VALUE
     )
     public ResponseEntity<Void> deleteSubscriptionByMrn(@PathVariable String mrn) {
-        Subscription subscription = subscriptionService.getSubscription(mrn);
+        Subscription subscription = subscriptionService.getSubscriptionByMrn(mrn);
         if (subscription == null) {
             return ResponseEntity.notFound().build();
         }
         boolean removed = subscriptionService.removeSubscription(mrn);
+        if (!removed) {
+            return ResponseEntity.internalServerError().build();
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping(
+            value = "/subscription/id/{id}",
+            produces = MediaType.TEXT_PLAIN_VALUE
+    )
+    public ResponseEntity<Subscription> deleteSubscriptionById(@PathVariable String id) {
+        Subscription subscription = subscriptionService.getSubscriptionById(id);
+        if (subscription == null) {
+            return ResponseEntity.notFound().build();
+        }
+        boolean removed = subscriptionService.removeSubscription(subscription.getServiceMrn());
         if (!removed) {
             return ResponseEntity.internalServerError().build();
         }

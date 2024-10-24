@@ -42,8 +42,15 @@ public class SubscriptionService {
         this.secomSignatureProvider = secomSignatureProvider;
     }
 
-    public Subscription getSubscription(String serviceMrn) {
+    public Subscription getSubscriptionByMrn(String serviceMrn) {
         return subscriptions.get(serviceMrn);
+    }
+
+    public Subscription getSubscriptionById(String subscriptionId) {
+        UUID uuid = UUID.fromString(subscriptionId);
+        return subscriptions.values().stream()
+                .filter(subscription -> subscription.getSubscriptionId().equals(uuid))
+                .findFirst().orElse(null);
     }
 
     public List<Subscription> getAllSubscriptions() {
