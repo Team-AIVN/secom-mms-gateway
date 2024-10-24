@@ -1,7 +1,6 @@
 package international.dmc.secom_mms_gateway.services;
 
 import international.dmc.secom_mms_gateway.model.Subscription;
-import international.dmc.secom_mms_gateway.utils.DataProductTypeParser;
 import lombok.extern.slf4j.Slf4j;
 import org.grad.secom.core.base.SecomCertificateProvider;
 import org.grad.secom.core.base.SecomSignatureProvider;
@@ -57,7 +56,7 @@ public class SubscriptionService {
         secomClient.setSignatureProvider(secomSignatureProvider);
         SubscriptionRequestObject subscriptionRequest = new SubscriptionRequestObject();
         subscriptionRequest.setContainerType(subscription.getContainerType());
-        subscriptionRequest.setDataProductType(DataProductTypeParser.getDataProductType(subscription.getDataProductType()));
+        subscriptionRequest.setDataProductType(subscription.getDataProductType());
         if (StringUtils.hasText(subscription.getDataReference())) {
             UUID dataReference = UUID.fromString(subscription.getDataReference());
             subscriptionRequest.setDataReference(dataReference);

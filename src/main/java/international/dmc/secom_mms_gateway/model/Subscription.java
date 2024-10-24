@@ -20,8 +20,8 @@ public class Subscription implements JsonSerializable {
     private String serviceUrl;
     @Schema(description = "The container type to be used for the subscription")
     private ContainerTypeEnum containerType;
-    private String dataProductType;
     @Schema(description = "The data product type to be used for the subscription")
+    private SECOM_DataProductType dataProductType;
     @Schema(description = "A data reference to be used for the subscription")
     private String dataReference;
     @Schema(description = "The subscription ID given by the subscribed SECOM service", accessMode = Schema.AccessMode.READ_ONLY)
