@@ -150,7 +150,7 @@ public class MMSAgent {
     private class MMSWebsocketHandler extends BinaryWebSocketHandler {
 
         @Override
-        public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+        public void afterConnectionEstablished(WebSocketSession session) throws IOException {
             MmtpMessage mmtpMessage = MmtpMessage.newBuilder()
                     .setUuid(UUID.randomUUID().toString())
                     .setMsgType(MsgType.PROTOCOL_MESSAGE)
@@ -162,7 +162,12 @@ public class MMSAgent {
                     )
                     .build();
             byte[] bytes = mmtpMessage.toByteArray();
-            session.sendMessage(new BinaryMessage(bytes));
+            try {
+                session.sendMessage(new BinaryMessage(bytes));
+            } catch (IOException e) {
+                log.error("Failed to send CONNECT message to Edge Router", e);
+                session.close(CloseStatus.PROTOCOL_ERROR);
+            }
             lastSentMessage.set(mmtpMessage);
         }
 
