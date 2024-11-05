@@ -100,7 +100,7 @@ public class MMSAgent {
     public void publishMessage(byte[] payload, String subject) throws UnrecoverableEntryException, CertificateException,
             SignatureException, NoSuchAlgorithmException, KeyStoreException, IOException, InvalidKeyException {
         long expires = Instant.now().plus(30, ChronoUnit.DAYS).getEpochSecond();
-        byte[] signature = generateSignature(subject, expires, ownMrn, payload.length, payload);
+        byte[] signature = generateSignature(subject, expires, ownMrn, payload);
 
         MmtpMessage mmtpMessage = MmtpMessage.newBuilder()
                 .setMsgType(MsgType.PROTOCOL_MESSAGE)
@@ -130,14 +130,14 @@ public class MMSAgent {
         lastSentMessage.set(mmtpMessage);
     }
 
-    private byte[] generateSignature(String subject, long expires, String ownMrn, int bodyLength, byte[] body)
+    private byte[] generateSignature(String subject, long expires, String ownMrn, byte[] body)
             throws SignatureException, UnrecoverableEntryException, CertificateException, NoSuchAlgorithmException,
             KeyStoreException, IOException, InvalidKeyException {
         List<byte[]> byteArrays = new ArrayList<>();
         byteArrays.add(subject.getBytes());
         byteArrays.add(Long.toString(expires).getBytes());
         byteArrays.add(ownMrn.getBytes());
-        byteArrays.add(Integer.toString(bodyLength).getBytes());
+        byteArrays.add(Integer.toString(body.length).getBytes());
         byteArrays.add(body);
         byte[] bytesToBeSigned = new byte[0];
         for (byte[] bytes : byteArrays) {
