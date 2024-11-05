@@ -1,6 +1,7 @@
 package international.dmc.secom_mms_gateway.mms;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import international.dmc.secom_mms_gateway.utils.KeystoreUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.maritimeconnectivity.mmtp.ApplicationMessage;
@@ -166,24 +167,24 @@ public class MMSAgent {
         }
 
         @Override
-        protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
-            MmtpMessage mmtpMessage = MmtpMessage.parseFrom(message.getPayload());
-            if (mmtpMessage == null) {
-                log.warn("Received a message that we could not parse");
-                return;
-            }
-            if (mmtpMessage.hasProtocolMessage()) {
-                log.warn("Received a Protocol Message that we cannot handle right now");
-                return;
-            }
-
-            if (mmtpMessage.hasResponseMessage()) {
-                ResponseMessage responseMessage = mmtpMessage.getResponseMessage();
-                if (!responseMessage.getResponseToUuid().equals(lastSentMessage.get().getUuid())) {
-                    log.error("Received a response to the wrong message");
-                } else if (responseMessage.getResponse() != ResponseEnum.GOOD && responseMessage.hasReasonText()) {
-                    log.error("Received a response with an error: {}", responseMessage.getReasonText());
+        protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) {
+            try {
+                MmtpMessage mmtpMessage = MmtpMessage.parseFrom(message.getPayload());
+                if (mmtpMessage.hasProtocolMessage()) {
+                    log.warn("Received a Protocol Message that we cannot handle right now");
+                    return;
                 }
+
+                if (mmtpMessage.hasResponseMessage()) {
+                    ResponseMessage responseMessage = mmtpMessage.getResponseMessage();
+                    if (!responseMessage.getResponseToUuid().equals(lastSentMessage.get().getUuid())) {
+                        log.error("Received a response to the wrong message");
+                    } else if (responseMessage.getResponse() != ResponseEnum.GOOD && responseMessage.hasReasonText()) {
+                        log.error("Received a response with an error: {}", responseMessage.getReasonText());
+                    }
+                }
+            } catch (InvalidProtocolBufferException e) {
+                log.warn("Received a message that we could not parse");
             }
         }
 
