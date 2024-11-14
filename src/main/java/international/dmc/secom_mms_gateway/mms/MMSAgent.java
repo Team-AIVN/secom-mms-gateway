@@ -19,6 +19,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.WebSocketSession;
@@ -195,6 +196,13 @@ public class MMSAgent {
 
         @Override
         public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+            if (!status.equals(CloseStatus.NORMAL)) {
+                if (StringUtils.hasText(status.getReason())) {
+                    log.error("The websocket was closed with code {} and reason {}", status.getCode(), status.getReason());
+                } else {
+                    log.error("The websocket was closed with code {}", status.getCode());
+                }
+            }
             session.close();
         }
     }
