@@ -89,7 +89,7 @@ public class SubscriptionManagementController {
         if (subscription == null) {
             return ResponseEntity.notFound().build();
         }
-        boolean removed = subscriptionService.removeSubscription(mrn);
+        boolean removed = subscriptionService.unsubscribeAndRemoveSubscription(mrn);
         if (!removed) {
             return ResponseEntity.internalServerError().build();
         }
@@ -105,7 +105,7 @@ public class SubscriptionManagementController {
         if (subscription == null) {
             return ResponseEntity.notFound().build();
         }
-        boolean removed = subscriptionService.removeSubscription(subscription.getServiceMrn());
+        boolean removed = subscriptionService.unsubscribeAndRemoveSubscription(subscription.getServiceMrn());
         if (!removed) {
             return ResponseEntity.internalServerError().build();
         }

@@ -78,14 +78,18 @@ public class SubscriptionService {
         return null;
     }
 
-    public boolean removeSubscription(String serviceMrn) {
+    public boolean unsubscribeAndRemoveSubscription(String serviceMrn) {
         if (!unsubscribeFromService(serviceMrn)) return false;
         subscriptions.remove(serviceMrn);
         return true;
     }
 
+    public void removeSubscription(String serviceMrn) {
+        subscriptions.remove(serviceMrn);
+    }
+
     public void removeAllSubscriptions() {
-        subscriptions.values().forEach(subscription -> removeSubscription(subscription.getServiceMrn()));
+        subscriptions.values().forEach(subscription -> unsubscribeAndRemoveSubscription(subscription.getServiceMrn()));
     }
 
     private boolean unsubscribeFromService(String serviceMrn) {
