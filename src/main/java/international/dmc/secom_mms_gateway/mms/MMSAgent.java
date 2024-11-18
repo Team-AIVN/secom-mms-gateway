@@ -86,16 +86,18 @@ public class MMSAgent {
 
     @PreDestroy
     public void preDestroy() throws IOException {
-        MmtpMessage disconnect = MmtpMessage.newBuilder()
-                .setMsgType(MsgType.PROTOCOL_MESSAGE)
-                .setUuid(UUID.randomUUID().toString())
-                .setProtocolMessage(ProtocolMessage.newBuilder()
-                        .setProtocolMsgType(ProtocolMessageType.DISCONNECT_MESSAGE)
-                        .setDisconnectMessage(Disconnect.newBuilder())
-                )
-                .build();
-        sendMessage(disconnect);
-        lastSentMessage.set(disconnect);
+        if (webSocketSession.isOpen()) {
+            MmtpMessage disconnect = MmtpMessage.newBuilder()
+                    .setMsgType(MsgType.PROTOCOL_MESSAGE)
+                    .setUuid(UUID.randomUUID().toString())
+                    .setProtocolMessage(ProtocolMessage.newBuilder()
+                            .setProtocolMsgType(ProtocolMessageType.DISCONNECT_MESSAGE)
+                            .setDisconnectMessage(Disconnect.newBuilder())
+                    )
+                    .build();
+            sendMessage(disconnect);
+            lastSentMessage.set(disconnect);
+        }
     }
 
     public void publishMessage(byte[] payload, String subject) throws UnrecoverableEntryException, CertificateException,
