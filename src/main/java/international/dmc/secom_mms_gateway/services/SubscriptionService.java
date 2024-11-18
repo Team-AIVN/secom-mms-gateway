@@ -79,18 +79,20 @@ public class SubscriptionService {
     }
 
     public boolean removeSubscription(String serviceMrn) {
-        Subscription subscription = subscriptions.get(serviceMrn);
-        RemoveSubscriptionObject removeSubscriptionObject = new RemoveSubscriptionObject();
-        removeSubscriptionObject.setSubscriptionIdentifier(subscription.getSubscriptionId());
-        var response = subscription.getSecomClient().removeSubscription(removeSubscriptionObject);
-        if (response.isEmpty()) {
-            return false;
-        }
+        if (!unsubscribeFromService(serviceMrn)) return false;
         subscriptions.remove(serviceMrn);
         return true;
     }
 
     public void removeAllSubscriptions() {
         subscriptions.values().forEach(subscription -> removeSubscription(subscription.getServiceMrn()));
+    }
+
+    private boolean unsubscribeFromService(String serviceMrn) {
+        Subscription subscription = subscriptions.get(serviceMrn);
+        RemoveSubscriptionObject removeSubscriptionObject = new RemoveSubscriptionObject();
+        removeSubscriptionObject.setSubscriptionIdentifier(subscription.getSubscriptionId());
+        var response = subscription.getSecomClient().removeSubscription(removeSubscriptionObject);
+        return response.isPresent();
     }
 }
