@@ -14,10 +14,11 @@ international:
       keystore:
         path: ${secom.security.ssl.keystore}
         password: ${secom.security.ssl.keystorePassword}
-        alias: cert
+        alias: 1
+      rootCA:
+        path:
       secom:
-        serviceUrl: https://example.com
-        dataProductType:
+        dataProductType: S124
       mms:
         mms-edgerouter:
           url: wss://eu-edgerouter.dmc.international:8888/
