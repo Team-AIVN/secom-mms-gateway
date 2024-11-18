@@ -85,7 +85,7 @@ public class MMSAgent {
     }
 
     @PreDestroy
-    public void preDestroy() throws IOException {
+    public void preDestroy() throws IOException, InterruptedException {
         if (webSocketSession.isOpen()) {
             MmtpMessage disconnect = MmtpMessage.newBuilder()
                     .setMsgType(MsgType.PROTOCOL_MESSAGE)
@@ -97,6 +97,7 @@ public class MMSAgent {
                     .build();
             sendMessage(disconnect);
             lastSentMessage.set(disconnect);
+            Thread.sleep(2000);
         }
     }
 
@@ -198,7 +199,7 @@ public class MMSAgent {
 
         @Override
         public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-            if (!status.equals(CloseStatus.NORMAL)) {
+            if (!status.equalsCode(CloseStatus.NORMAL)) {
                 if (StringUtils.hasText(status.getReason())) {
                     log.error("The websocket was closed with code {} and reason {}", status.getCode(), status.getReason());
                 } else {
