@@ -19,7 +19,6 @@ international:
         serviceUrl: https://example.com
         dataProductType:
       mms:
-        mms-subject: s125
         mms-edgerouter:
           url: wss://eu-edgerouter.dmc.international:8888/
         own-mrn: urn:mrn:mcp:service:mcc:core:secom-mms-gateway
