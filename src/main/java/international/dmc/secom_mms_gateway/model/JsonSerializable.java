@@ -3,7 +3,9 @@ package international.dmc.secom_mms_gateway.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.io.Serializable;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(value = JsonInclude.Include.NON_NULL)
-public interface JsonSerializable {
+public interface JsonSerializable extends Serializable {
 }

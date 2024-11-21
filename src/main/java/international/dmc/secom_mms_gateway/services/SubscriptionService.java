@@ -1,6 +1,7 @@
 package international.dmc.secom_mms_gateway.services;
 
 import international.dmc.secom_mms_gateway.model.Subscription;
+import international.dmc.secom_mms_gateway.repositories.SubscriptionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.grad.secom.core.base.SecomCertificateProvider;
 import org.grad.secom.core.base.SecomSignatureProvider;
@@ -30,13 +31,16 @@ import java.util.UUID;
 @Slf4j
 public class SubscriptionService {
     private final Map<String, Subscription> subscriptions = new HashMap<>();
+    private final SubscriptionRepository subscriptionRepository;
 
     private final SecomConfigProperties secomConfigProperties;
     private final SecomCertificateProvider secomCertificateProvider;
     private final SecomSignatureProvider secomSignatureProvider;
+    private final Map<String, SecomClient> secomClients = new HashMap<>();
 
     @Autowired
-    public SubscriptionService(SecomConfigProperties secomConfigProperties, SecomCertificateProvider secomCertificateProvider, SecomSignatureProvider secomSignatureProvider) {
+    public SubscriptionService(SubscriptionRepository subscriptionRepository, SecomConfigProperties secomConfigProperties, SecomCertificateProvider secomCertificateProvider, SecomSignatureProvider secomSignatureProvider) {
+        this.subscriptionRepository = subscriptionRepository;
         this.secomConfigProperties = secomConfigProperties;
         this.secomCertificateProvider = secomCertificateProvider;
         this.secomSignatureProvider = secomSignatureProvider;
