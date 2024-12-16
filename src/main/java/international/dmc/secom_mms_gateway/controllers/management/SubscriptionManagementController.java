@@ -2,6 +2,7 @@ package international.dmc.secom_mms_gateway.controllers.management;
 
 import international.dmc.secom_mms_gateway.model.Subscription;
 import international.dmc.secom_mms_gateway.services.SubscriptionService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping(value = "management")
 public class SubscriptionManagementController {
@@ -42,6 +44,7 @@ public class SubscriptionManagementController {
             newSubscription = subscriptionService.addSubscription(subscription);
         } catch (UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException | IOException |
                  CertificateException e) {
+            log.error("Could not create new subscription", e);
             return ResponseEntity.internalServerError().build();
         }
         return ResponseEntity.ok(newSubscription);
