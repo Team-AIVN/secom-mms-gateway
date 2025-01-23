@@ -14,18 +14,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
 import java.net.URI;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
@@ -36,7 +31,7 @@ public class SubscriptionService {
     private final SecomConfigProperties secomConfigProperties;
     private final SecomCertificateProvider secomCertificateProvider;
     private final SecomSignatureProvider secomSignatureProvider;
-    private final Map<String, SecomClient> secomClients = new HashMap<>();
+    private final Map<String, SecomClient> secomClients = new ConcurrentHashMap<>();
 
     @Autowired
     public SubscriptionService(SubscriptionRepository subscriptionRepository, SecomConfigProperties secomConfigProperties, SecomCertificateProvider secomCertificateProvider, SecomSignatureProvider secomSignatureProvider) {
@@ -47,24 +42,31 @@ public class SubscriptionService {
     }
 
     public Subscription getSubscriptionByMrn(String serviceMrn) {
-        return subscriptions.get(serviceMrn);
+        var subscription = subscriptionRepository.getSubscriptionByServiceMrn(serviceMrn);
+        if (subscription != null && populateSecomClient(serviceMrn, subscription)) {
+            return subscription;
+        }
+        return null;
     }
 
     public Subscription getSubscriptionById(String subscriptionId) {
         UUID uuid = UUID.fromString(subscriptionId);
-        return subscriptions.values().stream()
-                .filter(subscription -> subscription.getSubscriptionId().equals(uuid))
-                .findFirst().orElse(null);
+        var subscription = subscriptionRepository.getSubscriptionBySubscriptionId(uuid);
+        if (subscription != null && populateSecomClient(subscription.getServiceMrn(), subscription)) {
+            return subscription;
+        }
+        return null;
     }
 
     public List<Subscription> getAllSubscriptions() {
-        return new ArrayList<>(subscriptions.values());
+        return subscriptionRepository.getAll();
     }
 
-    public Subscription addSubscription(Subscription subscription) throws UnrecoverableKeyException, CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException {
-        SecomClient secomClient = new SecomClient(URI.create(subscription.getServiceUrl()).toURL(), secomConfigProperties);
-        secomClient.setCertificateProvider(secomCertificateProvider);
-        secomClient.setSignatureProvider(secomSignatureProvider);
+    public Subscription addSubscription(Subscription subscription) {
+        if (!populateSecomClient(subscription.getServiceMrn(), subscription)) {
+            return null;
+        }
+        var secomClient = subscription.getSecomClient();
         SubscriptionRequestObject subscriptionRequest = new SubscriptionRequestObject();
         subscriptionRequest.setContainerType(subscription.getContainerType());
         subscriptionRequest.setDataProductType(subscription.getDataProductType());
@@ -96,10 +98,33 @@ public class SubscriptionService {
     }
 
     private boolean unsubscribeFromService(String serviceMrn) {
-        Subscription subscription = subscriptions.get(serviceMrn);
-        RemoveSubscriptionObject removeSubscriptionObject = new RemoveSubscriptionObject();
-        removeSubscriptionObject.setSubscriptionIdentifier(subscription.getSubscriptionId());
-        var response = subscription.getSecomClient().removeSubscription(removeSubscriptionObject);
-        return response.isPresent();
+        Subscription subscription = getSubscriptionByMrn(serviceMrn);
+        if (subscription != null) {
+            RemoveSubscriptionObject removeSubscriptionObject = new RemoveSubscriptionObject();
+            removeSubscriptionObject.setSubscriptionIdentifier(subscription.getSubscriptionId());
+            var response = subscription.getSecomClient().removeSubscription(removeSubscriptionObject);
+            return response.isPresent();
+        }
+        return false;
+    }
+
+    private boolean populateSecomClient(String serviceMrn, Subscription subscription) {
+        var secomClient = secomClients.computeIfAbsent(serviceMrn, k -> {
+            try {
+                var tmp = new SecomClient(URI.create(subscription.getServiceUrl()).toURL(), secomConfigProperties);
+                tmp.setCertificateProvider(secomCertificateProvider);
+                tmp.setSignatureProvider(secomSignatureProvider);
+                return tmp;
+            } catch (Exception e) {
+                log.error("Error creating SECOM client", e);
+                return null;
+            }
+        });
+        if (secomClient != null) {
+            secomClients.put(serviceMrn, secomClient);
+            subscription.setSecomClient(secomClient);
+            return true;
+        }
+        return false;
     }
 }
