@@ -96,6 +96,7 @@ public class UploadSecomController implements UploadSecomInterface {
         String certDn = x509Certificate.getSubjectX500Principal().getName();
         RDN[] rdns = IETFUtils.rDNsFromString(certDn, BCStyle.INSTANCE);
         String uploaderMrn = CertificateHandler.getElement(rdns, BCStyle.UID);
+        log.debug("Uploader MRN is {}", uploaderMrn);
 
         Subscription subscription = subscriptionService.getSubscriptionByMrn(uploaderMrn);
         if (subscription == null) {

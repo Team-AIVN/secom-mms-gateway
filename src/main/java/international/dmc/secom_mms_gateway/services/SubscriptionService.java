@@ -68,14 +68,13 @@ public class SubscriptionService {
             UUID dataReference = UUID.fromString(subscription.getDataReference());
             subscriptionRequest.setDataReference(dataReference);
         }
+        subscription.setSecomClient(secomClient);
         Optional<SubscriptionResponseObject> subscriptionResponse = secomClient.subscription(subscriptionRequest);
         if (subscriptionResponse.isPresent() && subscriptionResponse.get().getSubscriptionIdentifier() != null) {
-            subscription.setSecomClient(secomClient);
             subscription.setSubscriptionId(subscriptionResponse.get().getSubscriptionIdentifier());
-            subscriptions.put(subscription.getServiceMrn(), subscription);
-            return subscription;
         }
-        return null;
+        subscriptions.put(subscription.getServiceMrn(), subscription);
+        return subscription;
     }
 
     public boolean unsubscribeAndRemoveSubscription(String serviceMrn) {
