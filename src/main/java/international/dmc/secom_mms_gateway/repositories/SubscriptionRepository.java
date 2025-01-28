@@ -12,5 +12,7 @@ public interface SubscriptionRepository extends PagingAndSortingRepository<Subsc
 
     Subscription getSubscriptionBySubscriptionId(UUID subscriptionId);
 
-    List<Subscription> getAll();
+    void deleteByServiceMrn(String serviceMrn);
+
+    boolean existsByServiceMrn(String serviceMrn);
 }

@@ -32,7 +32,6 @@ public class Subscription implements JsonSerializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
-    @JsonIgnore
     private Long id;
 
     @Column(name = "created_at", updatable = false)
@@ -41,11 +40,11 @@ public class Subscription implements JsonSerializable {
     @Column(name = "updated_at")
     private Date updatedAt;
 
-    @Column(name = "service_mrn")
+    @Column(name = "service_mrn", unique = true, nullable = false)
     @Schema(description = "The MRN of the SECOM service to subscribe to", requiredMode = Schema.RequiredMode.REQUIRED)
     private String serviceMrn;
 
-    @Column(name = "service_url")
+    @Column(name = "service_url", nullable = false)
     @Schema(description = "The URL of the SECOM service to subscribe to", requiredMode = Schema.RequiredMode.REQUIRED)
     private String serviceUrl;
 

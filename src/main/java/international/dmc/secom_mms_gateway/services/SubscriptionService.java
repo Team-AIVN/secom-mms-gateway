@@ -1,5 +1,7 @@
 package international.dmc.secom_mms_gateway.services;
 
+import international.dmc.secom_mms_gateway.exceptions.SubscriptionException;
+import international.dmc.secom_mms_gateway.exceptions.SubscriptionFailure;
 import international.dmc.secom_mms_gateway.model.Subscription;
 import international.dmc.secom_mms_gateway.repositories.SubscriptionRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @Slf4j
 public class SubscriptionService {
-    private final Map<String, Subscription> subscriptions = new HashMap<>();
     private final SubscriptionRepository subscriptionRepository;
 
     private final SecomConfigProperties secomConfigProperties;
@@ -43,7 +43,7 @@ public class SubscriptionService {
 
     public Subscription getSubscriptionByMrn(String serviceMrn) {
         var subscription = subscriptionRepository.getSubscriptionByServiceMrn(serviceMrn);
-        if (subscription != null && populateSecomClient(serviceMrn, subscription)) {
+        if (subscription != null && populateSecomClient(subscription)) {
             return subscription;
         }
         return null;
@@ -52,19 +52,22 @@ public class SubscriptionService {
     public Subscription getSubscriptionById(String subscriptionId) {
         UUID uuid = UUID.fromString(subscriptionId);
         var subscription = subscriptionRepository.getSubscriptionBySubscriptionId(uuid);
-        if (subscription != null && populateSecomClient(subscription.getServiceMrn(), subscription)) {
+        if (subscription != null && populateSecomClient(subscription)) {
             return subscription;
         }
         return null;
     }
 
     public List<Subscription> getAllSubscriptions() {
-        return subscriptionRepository.getAll();
+        return (List<Subscription>) subscriptionRepository.findAll();
     }
 
-    public Subscription addSubscription(Subscription subscription) {
-        if (!populateSecomClient(subscription.getServiceMrn(), subscription)) {
-            return null;
+    public Subscription addSubscription(Subscription subscription) throws SubscriptionException {
+        if (subscriptionRepository.existsByServiceMrn(subscription.getServiceMrn())) {
+            throw new SubscriptionException(SubscriptionFailure.SUBSCRIPTION_ALREADY_EXISTS);
+        }
+        if (!populateSecomClient(subscription)) {
+            throw new SubscriptionException(SubscriptionFailure.SECOM_CLIENT_CREATION_FAILED);
         }
         var secomClient = subscription.getSecomClient();
         SubscriptionRequestObject subscriptionRequest = new SubscriptionRequestObject();
@@ -76,25 +79,22 @@ public class SubscriptionService {
         }
         subscription.setSecomClient(secomClient);
         Optional<SubscriptionResponseObject> subscriptionResponse = secomClient.subscription(subscriptionRequest);
+        subscriptionRepository.save(subscription);
         if (subscriptionResponse.isPresent() && subscriptionResponse.get().getSubscriptionIdentifier() != null) {
             subscription.setSubscriptionId(subscriptionResponse.get().getSubscriptionIdentifier());
         }
-        subscriptions.put(subscription.getServiceMrn(), subscription);
         return subscription;
     }
 
     public boolean unsubscribeAndRemoveSubscription(String serviceMrn) {
         if (!unsubscribeFromService(serviceMrn)) return false;
-        subscriptions.remove(serviceMrn);
+        subscriptionRepository.deleteByServiceMrn(serviceMrn);
         return true;
     }
 
     public void removeSubscription(String serviceMrn) {
-        subscriptions.remove(serviceMrn);
-    }
-
-    public void removeAllSubscriptions() {
-        subscriptions.values().forEach(subscription -> unsubscribeAndRemoveSubscription(subscription.getServiceMrn()));
+        subscriptionRepository.deleteByServiceMrn(serviceMrn);
+        secomClients.remove(serviceMrn);
     }
 
     private boolean unsubscribeFromService(String serviceMrn) {
@@ -103,12 +103,16 @@ public class SubscriptionService {
             RemoveSubscriptionObject removeSubscriptionObject = new RemoveSubscriptionObject();
             removeSubscriptionObject.setSubscriptionIdentifier(subscription.getSubscriptionId());
             var response = subscription.getSecomClient().removeSubscription(removeSubscriptionObject);
-            return response.isPresent();
+            if (response.isPresent()) {
+                removeSubscription(serviceMrn);
+                return true;
+            }
         }
         return false;
     }
 
-    private boolean populateSecomClient(String serviceMrn, Subscription subscription) {
+    private boolean populateSecomClient(Subscription subscription) {
+        var serviceMrn = subscription.getServiceMrn();
         var secomClient = secomClients.computeIfAbsent(serviceMrn, k -> {
             try {
                 var tmp = new SecomClient(URI.create(subscription.getServiceUrl()).toURL(), secomConfigProperties);

@@ -1,5 +1,11 @@
 spring:
   application.name: secom-mms-gateway
+  datasource:
+    url: jdbc:postgresql://localhost/test
+    username: test
+    password: test
+  flyway:
+    baseline-on-migrate: true
 
 secom:
   security:
