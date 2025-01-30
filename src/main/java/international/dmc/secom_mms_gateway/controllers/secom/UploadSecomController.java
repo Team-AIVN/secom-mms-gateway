@@ -25,7 +25,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import jakarta.annotation.PreDestroy;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Path;
 import java.io.ByteArrayInputStream;
@@ -60,11 +59,6 @@ public class UploadSecomController implements UploadSecomInterface {
     public UploadSecomController(SubscriptionService subscriptionService, MMSAgent mmsAgent) {
         this.subscriptionService = subscriptionService;
         this.mmsAgent = mmsAgent;
-    }
-
-    @PreDestroy
-    public void preDestroy() {
-        subscriptionService.removeAllSubscriptions();
     }
 
     @Tag(name = "SECOM")

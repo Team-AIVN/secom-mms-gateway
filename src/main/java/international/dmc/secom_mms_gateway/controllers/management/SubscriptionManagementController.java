@@ -1,9 +1,11 @@
 package international.dmc.secom_mms_gateway.controllers.management;
 
+import international.dmc.secom_mms_gateway.exceptions.SubscriptionException;
 import international.dmc.secom_mms_gateway.model.Subscription;
 import international.dmc.secom_mms_gateway.services.SubscriptionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,11 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.util.List;
 
 @Slf4j
@@ -42,10 +39,11 @@ public class SubscriptionManagementController {
         Subscription newSubscription;
         try {
             newSubscription = subscriptionService.addSubscription(subscription);
-        } catch (UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException | IOException |
-                 CertificateException e) {
-            log.error("Could not create new subscription", e);
-            return ResponseEntity.internalServerError().build();
+        } catch (SubscriptionException e) {
+            return switch (e.getSubscriptionFailure()) {
+                case SUBSCRIPTION_ALREADY_EXISTS -> ResponseEntity.status(HttpStatus.CONFLICT).build();
+                case SECOM_CLIENT_CREATION_FAILED -> ResponseEntity.badRequest().build();
+            };
         }
         return ResponseEntity.ok(newSubscription);
     }
