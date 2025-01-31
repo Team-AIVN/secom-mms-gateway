@@ -1,6 +1,10 @@
 FROM eclipse-temurin:21-jdk AS builder
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y libapr1-dev libssl-dev tar gzip build-essential file && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y build-essential file gzip libapr1-dev libssl-dev tar && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 ADD https://dlcdn.apache.org/tomcat/tomcat-connectors/native/2.0.7/source/tomcat-native-2.0.7-src.tar.gz tomcat-native.tar.gz
 
@@ -14,10 +18,13 @@ FROM eclipse-temurin:21-jre
 
 COPY --from=builder /usr/local/apr/lib /usr/lib/
 
-# Install native libraries that can be used by Spring Boot's embedded Tomcat server for improved performance
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y libapr1 && rm -rf /var/lib/apt/lists* /var/cache/apt/archives/*
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN mkdir /conf
+# Install native libraries that can be used by Spring Boot's embedded Tomcat server for improved performance
+RUN apt-get update && \
+    apt-get install -y libapr1 && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* && \
+    mkdir /conf
 
 COPY secom-mms-gateway-0.0.1-SNAPSHOT.jar .
 
