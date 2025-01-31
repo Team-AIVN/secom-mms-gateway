@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Component
@@ -60,6 +61,7 @@ public class MMSAgent {
 
     private final KeystoreUtil keystoreUtil;
     private final AtomicReference<MmtpMessage> lastSentMessage = new AtomicReference<>();
+    private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
 
     private WebSocketSession webSocketSession;
 
@@ -71,21 +73,12 @@ public class MMSAgent {
     @PostConstruct
     public void init() throws URISyntaxException, ExecutionException, InterruptedException, NoSuchAlgorithmException,
             CertificateException, KeyStoreException, IOException, UnrecoverableKeyException, KeyManagementException {
-        StandardWebSocketClient webSocketClient = new StandardWebSocketClient();
-
-        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keystoreUtil.getMmsKeystore(), keystoreUtil.getMmsKeystorePassword());
-
-        SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
-
-        webSocketClient.setSslContext(sslContext);
-        URI uri = new URI(edgeRouterURL);
-        webSocketSession = webSocketClient.execute(new MMSWebsocketHandler(), null, uri).get();
+        setupWebSocket();
     }
 
     @PreDestroy
     public void preDestroy() throws IOException, InterruptedException {
+        shuttingDown.set(true);
         if (webSocketSession.isOpen()) {
             MmtpMessage disconnect = MmtpMessage.newBuilder()
                     .setMsgType(MsgType.PROTOCOL_MESSAGE)
@@ -132,6 +125,23 @@ public class MMSAgent {
         byte[] bytes = mmtpMessage.toByteArray();
         webSocketSession.sendMessage(new BinaryMessage(bytes));
         lastSentMessage.set(mmtpMessage);
+    }
+
+    private void setupWebSocket() throws NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException,
+            CertificateException, IOException, KeyManagementException, URISyntaxException, InterruptedException,
+            ExecutionException {
+        StandardWebSocketClient webSocketClient = new StandardWebSocketClient();
+
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(keystoreUtil.getMmsKeystore(), keystoreUtil.getMmsKeystorePassword());
+
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+
+        webSocketClient.setSslContext(sslContext);
+        URI uri = new URI(edgeRouterURL);
+        webSocketSession = webSocketClient.execute(new MMSWebsocketHandler(), null, uri).get();
+        log.info("Connected to edge router {}", edgeRouterURL);
     }
 
     private byte[] generateSignature(String subject, long expires, String ownMrn, byte[] body)
@@ -199,11 +209,28 @@ public class MMSAgent {
 
         @Override
         public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-            if (!status.equalsCode(CloseStatus.NORMAL)) {
+            if (!status.equalsCode(CloseStatus.NORMAL) && !shuttingDown.get()) {
                 if (StringUtils.hasText(status.getReason())) {
                     log.error("The websocket was closed with code {} and reason {}", status.getCode(), status.getReason());
                 } else {
                     log.error("The websocket was closed with code {}", status.getCode());
+                }
+                try {
+                    session.close();
+                } catch (IOException e) {
+                    log.error("Failed to close websocket", e);
+                }
+                int retryCount = 0;
+                while (retryCount < 10 && !shuttingDown.get()) {
+                    try {
+                        Thread.sleep(5000);
+                        setupWebSocket();
+                        return;
+                    } catch (IOException | ExecutionException e) {
+                        log.error("Couldn't connect to the websocket, trying again: {}", e.getMessage());
+                        // If we fail, we just try again
+                        retryCount++;
+                    }
                 }
             }
             session.close();
