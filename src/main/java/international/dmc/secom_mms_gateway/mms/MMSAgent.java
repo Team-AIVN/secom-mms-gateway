@@ -232,6 +232,10 @@ public class MMSAgent {
                         retryCount++;
                     }
                 }
+                if (!shuttingDown.get()) {
+                    log.error("Failed to connect to edge router after {} attempts", retryCount);
+                    System.exit(1);
+                }
             }
             session.close();
         }
