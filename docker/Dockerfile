@@ -16,6 +16,8 @@ RUN ./configure && make && make install
 
 FROM eclipse-temurin:21-jre
 
+LABEL org.opencontainers.image.source="https://github.com/Digital-Maritime-Consultancy/secom-mms-gateway"
+
 COPY --from=builder /usr/local/apr/lib /usr/lib/
 
 ENV DEBIAN_FRONTEND=noninteractive
