@@ -79,10 +79,10 @@ public class SubscriptionService {
         }
         subscription.setSecomClient(secomClient);
         Optional<SubscriptionResponseObject> subscriptionResponse = secomClient.subscription(subscriptionRequest);
-        subscriptionRepository.save(subscription);
         if (subscriptionResponse.isPresent() && subscriptionResponse.get().getSubscriptionIdentifier() != null) {
             subscription.setSubscriptionId(subscriptionResponse.get().getSubscriptionIdentifier());
         }
+        subscriptionRepository.save(subscription);
         return subscription;
     }
 
