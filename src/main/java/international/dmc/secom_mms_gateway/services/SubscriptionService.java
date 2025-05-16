@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.net.URI;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -82,6 +83,11 @@ public class SubscriptionService {
         if (subscriptionResponse.isPresent() && subscriptionResponse.get().getSubscriptionIdentifier() != null) {
             subscription.setSubscriptionId(subscriptionResponse.get().getSubscriptionIdentifier());
         }
+
+        Date now = new Date();
+        subscription.setCreatedAt(now);
+        subscription.setUpdatedAt(now);
+
         subscriptionRepository.save(subscription);
         return subscription;
     }
