@@ -33,5 +33,5 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: docker
-          tags: ghcr.io/digital-maritime-consultancy/gateway
+          tags: ghcr.io/team-aivn/gateway
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
